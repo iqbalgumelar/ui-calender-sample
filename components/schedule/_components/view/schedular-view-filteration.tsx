@@ -15,28 +15,11 @@ import MonthView from "./month/month-view";
 import WeeklyView from "./week/week-view";
 import { useModalContext } from "@/providers/modal-provider";
 import { ClassNames, CustomComponents, Views } from "@/types/index";
+import axios from "axios";
+import { locationData, objectBylocationData } from "@/services/mocksFilter/masterMock";
 
 // Sample Master Object Data (Replace with API response)
-const masterObject = {
-  data: [
-    {
-      id: "fd6f4d17-5c97-48a4-9ff6-5262674131f5",
-      object_code: "code1",
-      object_type: "type1",
-      is_active: true,
-      title: "test1",
-      title_en: "titleEn1",
-    },
-    {
-      id: "2d6f4d17-5c97-48a4-9ff6-5262674131f6",
-      object_code: "code2",
-      object_type: "type2",
-      is_active: true,
-      title: "test2",
-      title_en: "titleEn2",
-    },
-  ],
-};
+
 
 export default function SchedulerViewFilteration({
   views = {
@@ -53,11 +36,80 @@ export default function SchedulerViewFilteration({
   const { showModal: showAddEventModal } = useModalContext();
   const [clientSide, setClientSide] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [selectedObject, setSelectedObject] = useState<string>();
+  const [selectedLocation, setSelectedLocation] = useState<string>();
+  const [masterObject, setMasterObject] = useState<any[]>([]);
+  const [masterLocation, setMasterLocation] = useState<any[]>([]);
 
   useEffect(() => {
     setClientSide(true);
   }, []);
+
+
+  useEffect(function(){
+    console.log('kesini pertama:', selectedLocation);
+    getAllLocation();
+
+  }, []);
+
+  const getAllLocation = async () => {
+    try {
+      const headers = {
+        "x-userid": "xxx",
+        "x-username": "xxx",
+        "x-source": "xxx",
+        "x-orgid": 2,
+        "x-lang": "en",
+        "Content-Type": "application/json"
+      };
+      
+      const resp = await axios.get(`https://jsonplaceholder.typicode.com/todos`, {
+        headers
+      });
+      let data = locationData.data;
+  
+      setMasterLocation(data);
+    } catch (err) {
+      console.log('~  err:', err)
+    }
+  }
+
+  const handleLocationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedLocation(event.target.value);
+  };
+
+  const handleObjectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    if (!event.target.value) return;
+    setSelectedObject(event.target.value);
+  };
+  
+  useEffect(() => {
+    if (selectedLocation) {
+      fetchObjectsByLocation(selectedLocation);
+    }
+  }, [selectedLocation]);
+  
+  const fetchObjectsByLocation = async (locationId: string) => {
+    try {
+      const headers = {
+        "x-userid": "xxx",
+        "x-username": "xxx",
+        "x-source": "xxx",
+        "x-orgid": 2,
+        "x-lang": "en",
+        "Content-Type": "application/json"
+      };
+      
+      const resp = await axios.get(`https://jsonplaceholder.typicode.com/todos?locationId=${locationId}`, {
+        headers
+      });
+      let data = objectBylocationData.data
+  
+      setMasterObject(data);
+    } catch (err) {
+      console.log('~  err:', err)
+    }
+  }
 
   useEffect(() => {
     if (!clientSide) return;
@@ -89,17 +141,38 @@ export default function SchedulerViewFilteration({
       {/* Filter Dropdown */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Filter Events</h2>
-        <select
-  onChange={(e) => setSelectedFilter(e.target.value)}
-  className="border p-2 rounded-md"
->
-  <option value="">Select Object</option>
-  {masterObject.data.map((item) => (
-    <option key={item.id} value={item.object_code}>
-      {item.title_en}
-    </option>
-  ))}
-</select>
+        <div className="flex space-x-4">
+          <select
+            onChange={handleLocationChange}
+            value={selectedLocation}
+            className="border p-2 rounded-md"
+          >
+            <option value="">
+              Select Location
+            </option>
+            {masterLocation?.map((item: any) => (
+              <option key={item.location_id} value={item.location_id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          <select
+            onChange={handleObjectChange}
+            value={selectedObject}
+            className="border p-2 rounded-md"
+            style={{ maxWidth: "150px" }}
+            disabled={!selectedLocation}
+          >
+            <option value="">
+              Select Object
+            </option>
+            {masterObject?.map((item: any) => (
+              <option key={item.master_object_id} value={item.master_object_id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="flex w-full">
@@ -118,7 +191,7 @@ export default function SchedulerViewFilteration({
                 }
               >
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3, type: "spring", stiffness: 250 }}>
-                  <DailyView classNames={classNames?.buttons} filter={selectedFilter} />
+                  <DailyView classNames={classNames?.buttons} filterLocation={selectedLocation} filterObject={selectedObject} />
                 </motion.div>
               </Tab>
             )}
@@ -136,7 +209,7 @@ export default function SchedulerViewFilteration({
                 }
               >
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3, type: "spring", stiffness: 250 }}>
-                  <WeeklyView classNames={classNames?.buttons} filter={selectedFilter} />
+                  <WeeklyView classNames={classNames?.buttons} filterLocation={selectedLocation} filterObject={selectedObject} />
                 </motion.div>
               </Tab>
             )}
@@ -154,7 +227,7 @@ export default function SchedulerViewFilteration({
                 }
               >
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3, type: "spring", stiffness: 250 }}>
-                  <MonthView classNames={classNames?.buttons} filter={selectedFilter} />
+                  <MonthView classNames={classNames?.buttons} filterLocation={selectedLocation} filterObject={selectedObject} />
                 </motion.div>
               </Tab>
             )}

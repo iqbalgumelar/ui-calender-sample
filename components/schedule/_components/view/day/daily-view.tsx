@@ -80,12 +80,16 @@ export default function DailyView({
   CustomEventComponent,
   CustomEventModal,
   classNames,
+  filterLocation,
+  filterObject,
 }: {
   prevButton?: React.ReactNode;
   nextButton?: React.ReactNode;
   CustomEventComponent?: React.FC<Event>;
   CustomEventModal?: CustomEventModal;
   classNames?: { prev?: string; next?: string; addEvent?: string };
+  filterLocation?: string;
+  filterObject?: string;
 }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const hoursColumnRef = useRef<HTMLDivElement>(null);
@@ -129,8 +133,8 @@ export default function DailyView({
   }, []);
 
   const getCalendars = async () => {
-    const objectId = '001be382-d489-4cc9-81f1-c7ad9ab3f809';
-    const locationId = '987e6543-e21b-34d2-a654-426614174999';
+    const objectId = filterObject;
+    const locationId = filterLocation;
     const headers = {
       "x-userid": "xxx",
       "x-username": "xxx",
