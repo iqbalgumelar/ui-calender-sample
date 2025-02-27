@@ -1,0 +1,17 @@
+[
+    {
+      "id": "1",
+      "title": "Morning Meeting",
+      "startDate": "2024-02-26T09:00:00",
+      "endDate": "2024-02-26T10:10:00",
+      "variant": "primary"
+    },
+    {
+      "id": "2",
+      "title": "Lunch Break",
+      "startDate": "2024-02-26T12:00:00",
+      "endDate": "2024-02-26T13:00:00",
+      "variant": "success"
+    }
+  ]
+  

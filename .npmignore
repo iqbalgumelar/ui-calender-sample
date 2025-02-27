@@ -1,0 +1,7 @@
+# Ignore everything by default
+*
+
+# Include only dist and tailwind config files/folder
+!dist/
+!tailwind.config.js
+!tailwind/
