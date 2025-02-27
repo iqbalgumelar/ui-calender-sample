@@ -127,14 +127,13 @@ export default function DailyView({
 
   
 
-  useEffect(function(){
+  useEffect(() => {
     getCalendars();
-
-  }, []);
+  }, [currentDate, filterLocation, filterObject]);
 
   const getCalendars = async () => {
-    const objectId = filterObject;
-    const locationId = filterLocation;
+    if (!filterLocation) return;
+  
     const headers = {
       "x-userid": "xxx",
       "x-username": "xxx",
@@ -143,19 +142,24 @@ export default function DailyView({
       "x-lang": "en",
       "Content-Type": "application/json"
     };
-    
-    const resp = await axios.get(`http://localhost:3000/api/v1/calendars?objectId=${objectId}&locationId=${locationId}&page=all`, {
+  
+    const params = new URLSearchParams();
+    if (filterObject) params.append("objectId", filterObject);
+    if (filterLocation) params.append("locationId", filterLocation);
+    params.append("page", "all");
+  
+    const resp = await axios.get(`http://localhost:3000/api/v1/calendars?${params.toString()}`, {
       headers
     });
     let data = resp.data.data;
-
-     // Convert API time to comparable format (HH:mm)
+  
+    // Convert API time to comparable format (HH:mm)
     data = data.map(({ from_time, to_time }: any) => ({
       from: from_time.slice(0, 5), // Extract HH:mm
       to: to_time.slice(0, 5),
     }));
     setAvailable(data);
-  }
+  };
 
   function handleAddEventDay(fromTime: string, toTime: string) {
     console.log("Adding event:", fromTime, "to", toTime);
@@ -267,49 +271,55 @@ export default function DailyView({
 
       {/* Time Slots Display */}
       <div className="relative rounded-md bg-default-50 hover:bg-default-100 transition duration-400 w-full">
-      <motion.div className="relative rounded-xl flex flex-col w-full" ref={hoursColumnRef}>
-      {timeSlots.map((slot, index) => {
-        const availableSlot = availableData.find(({ from, to }: any) => slot >= from && slot < to);
-        const isBooked = bookedSlots.some(({ from, to }) => slot >= from && slot < to);
-        const isAvailable = !!availableSlot;
+        <motion.div className="relative rounded-xl flex flex-col w-full" ref={hoursColumnRef}>
+          {availableData.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">
+              No available time slots.
+            </div>
+          ) : (
+            timeSlots.map((slot, index) => {
+              const availableSlot = availableData.find(({ from, to }: any) => slot >= from && slot < to);
+              const isBooked = bookedSlots.some(({ from, to }) => slot >= from && slot < to);
+              const isAvailable = !!availableSlot;
 
-        let slotClass = "bg-gray-800 text-gray-400"; // Default
-        let statusText = "";
+              let slotClass = "bg-gray-800 text-gray-400"; // Default
+              let statusText = "";
 
-        if (isBooked) {
-          slotClass = "bg-red-500 text-white font-bold rounded-md shadow-md";
-          statusText = "⛔ Booked";
-        } else if (isAvailable) {
-          slotClass = "bg-green-200 text-black font-bold rounded-md shadow-md";
-          statusText = "✅ Available";
-        }
-
-        return (
-          <motion.div
-            key={`time-slot-${index}`}
-            onClick={() => {
-              if (isAvailable && availableSlot) {
-                // Calculate the "to" value by adding the selected timeInterval
-                const [fromHours, fromMinutes] = timeSlots[index].split(":").map(Number);
-                const toDate = new Date();
-                toDate.setHours(fromHours);
-                toDate.setMinutes(fromMinutes + timeInterval); // Add timeInterval minutes
-
-                const toHours = String(toDate.getHours()).padStart(2, "0");
-                const toMinutes = String(toDate.getMinutes()).padStart(2, "0");
-                const toTime = `${toHours}:${toMinutes}`;
-
-                handleAddEventDay(timeSlots[index], toTime);
+              if (isBooked) {
+                slotClass = "bg-red-500 text-white font-bold rounded-md shadow-md";
+                statusText = "⛔ Booked";
+              } else if (isAvailable) {
+                slotClass = "bg-green-200 text-black font-bold rounded-md shadow-md";
+                statusText = "✅ Available";
               }
-            }}
-            className={`cursor-pointer px-6 py-3 h-[40px] flex items-center justify-between border-b border-default-200 w-full text-sm ${slotClass}`}
-          >
-            <span>{timeSlots[index]} - {calculateEndTime(timeSlots[index], timeInterval)}</span>
-            {statusText && <span>{statusText}</span>}
-          </motion.div>
-        );
-        })}
-      </motion.div>
+
+              return (
+                <motion.div
+                  key={`time-slot-${index}`}
+                  onClick={() => {
+                    if (isAvailable && availableSlot) {
+                      // Calculate the "to" value by adding the selected timeInterval
+                      const [fromHours, fromMinutes] = timeSlots[index].split(":").map(Number);
+                      const toDate = new Date();
+                      toDate.setHours(fromHours);
+                      toDate.setMinutes(fromMinutes + timeInterval); // Add timeInterval minutes
+
+                      const toHours = String(toDate.getHours()).padStart(2, "0");
+                      const toMinutes = String(toDate.getMinutes()).padStart(2, "0");
+                      const toTime = `${toHours}:${toMinutes}`;
+
+                      handleAddEventDay(timeSlots[index], toTime);
+                    }
+                  }}
+                  className={`cursor-pointer px-6 py-3 h-[40px] flex items-center justify-between border-b border-default-200 w-full text-sm ${slotClass}`}
+                >
+                  <span>{timeSlots[index]} - {calculateEndTime(timeSlots[index], timeInterval)}</span>
+                  {statusText && <span>{statusText}</span>}
+                </motion.div>
+              );
+            })
+          )}
+        </motion.div>
       </div>
     </div>
   );

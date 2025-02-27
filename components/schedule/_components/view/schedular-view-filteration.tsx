@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@nextui-org/button";
@@ -47,7 +45,6 @@ export default function SchedulerViewFilteration({
 
 
   useEffect(function(){
-    console.log('kesini pertama:', selectedLocation);
     getAllLocation();
 
   }, []);
@@ -63,10 +60,13 @@ export default function SchedulerViewFilteration({
         "Content-Type": "application/json"
       };
       
-      const resp = await axios.get(`https://jsonplaceholder.typicode.com/todos`, {
+      const resp = await axios.get(`http://localhost:3000/api/v1/locations`, {
         headers
       });
-      let data = locationData.data;
+      let data = resp.data;
+
+      // use mock data for testing
+      // let data = locationData.data;
   
       setMasterLocation(data);
     } catch (err) {
@@ -76,6 +76,7 @@ export default function SchedulerViewFilteration({
 
   const handleLocationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedLocation(event.target.value);
+    setSelectedObject('');
   };
 
   const handleObjectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -100,10 +101,14 @@ export default function SchedulerViewFilteration({
         "Content-Type": "application/json"
       };
       
-      const resp = await axios.get(`https://jsonplaceholder.typicode.com/todos?locationId=${locationId}`, {
+      const resp = await axios.get(`http://localhost:3000/api/v1/master-objects/location?id=${locationId}`, {
         headers
       });
-      let data = objectBylocationData.data
+
+      let data = resp.data;
+
+      // use mock data for testing
+      // let data = objectBylocationData.data
   
       setMasterObject(data);
     } catch (err) {
