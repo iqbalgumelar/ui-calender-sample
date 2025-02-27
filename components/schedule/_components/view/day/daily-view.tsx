@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useModalContext } from "@/providers/modal-provider"; 
 import AddEventModal from "@/components/schedule/_modals/add-event-modal";
@@ -7,6 +7,7 @@ import { Button } from "@nextui-org/button";
 import { Chip } from "@nextui-org/chip";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { time } from "console";
+import axios from "axios";
 
 const timeIntervals = [15, 30, 60]; // Available time slots
 
@@ -93,6 +94,7 @@ export default function DailyView({
   const [detailedHour, setDetailedHour] = useState<array | null>(null);
   const [timelinePosition, setTimelinePosition] = useState<number>(0);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [availableData, setAvailable] = useState<any>([]);
   const { showModal } = useModalContext();
 
   const handleNextDay = () => {
@@ -107,7 +109,7 @@ export default function DailyView({
     setCurrentDate(prevDay);
   };
 
-  const calculateEndTime = (startTime, duration) => {
+  const calculateEndTime = (startTime: any, duration: any) => {
     const [hours, minutes] = startTime.split(":").map(Number);
     const endDate = new Date();
     endDate.setHours(hours);
@@ -119,11 +121,37 @@ export default function DailyView({
     return `${endHours}:${endMinutes}`;
   };
 
-  // Convert API time to comparable format (HH:mm)
-  const availableSlots = availableData.data.map(({ from_time, to_time }) => ({
-    from: from_time.slice(0, 5), // Extract HH:mm
-    to: to_time.slice(0, 5),
-  }));
+  
+
+  useEffect(function(){
+    getCalendars();
+
+  }, []);
+
+  const getCalendars = async () => {
+    const objectId = '001be382-d489-4cc9-81f1-c7ad9ab3f809';
+    const locationId = '987e6543-e21b-34d2-a654-426614174999';
+    const headers = {
+      "x-userid": "xxx",
+      "x-username": "xxx",
+      "x-source": "xxx",
+      "x-orgid": 2,
+      "x-lang": "en",
+      "Content-Type": "application/json"
+    };
+    
+    const resp = await axios.get(`http://localhost:3000/api/v1/calendars?objectId=${objectId}&locationId=${locationId}&page=all`, {
+      headers
+    });
+    let data = resp.data.data;
+
+     // Convert API time to comparable format (HH:mm)
+    data = data.map(({ from_time, to_time }: any) => ({
+      from: from_time.slice(0, 5), // Extract HH:mm
+      to: to_time.slice(0, 5),
+    }));
+    setAvailable(data);
+  }
 
   function handleAddEventDay(fromTime: string, toTime: string) {
     console.log("Adding event:", fromTime, "to", toTime);
@@ -237,7 +265,7 @@ export default function DailyView({
       <div className="relative rounded-md bg-default-50 hover:bg-default-100 transition duration-400 w-full">
       <motion.div className="relative rounded-xl flex flex-col w-full" ref={hoursColumnRef}>
       {timeSlots.map((slot, index) => {
-        const availableSlot = availableSlots.find(({ from, to }) => slot >= from && slot < to);
+        const availableSlot = availableData.find(({ from, to }: any) => slot >= from && slot < to);
         const isBooked = bookedSlots.some(({ from, to }) => slot >= from && slot < to);
         const isAvailable = !!availableSlot;
 
