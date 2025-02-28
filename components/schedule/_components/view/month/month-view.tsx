@@ -21,12 +21,16 @@ export default function MonthView({
   CustomEventComponent,
   CustomEventModal,
   classNames,
+  filterLocation,
+  filterObject,
 }: {
   prevButton?: React.ReactNode;
   nextButton?: React.ReactNode;
   CustomEventComponent?: React.FC<Event>;
   CustomEventModal?: CustomEventModal;
   classNames?: { prev?: string; next?: string; addEvent?: string };
+  filterLocation?: string;
+  filterObject?: string;
 }) {
   const { getters, weekStartsOn } = useScheduler();
   const { showModal } = useModalContext();
