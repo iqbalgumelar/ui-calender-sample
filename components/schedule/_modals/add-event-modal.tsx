@@ -21,11 +21,12 @@ import { v4 as uuidv4 } from "uuid";
 
 export default function AddEventModal({
   CustomAddEventModal, fromTime, // Accept props
-  toTime
+  toTime, slot
 }: {
   CustomAddEventModal?: React.FC<{ register: any; errors: any }>;
   fromTime?: string;
   toTime?: string;
+  slot?: any;
 }) {
   const { onClose, data } = useModalContext();
   const { handlers } = useScheduler();
@@ -118,8 +119,52 @@ export default function AddEventModal({
     }
   }, [data, setValue]);
 
-  const onSubmit: SubmitHandler<EventFormData> = (formData) => {
-    const selectedSlot = scheduleOptions.find((s) => s.key === selectedSchedule);
+  const onSubmit: SubmitHandler<EventFormData> = async (formData) => {
+    const selectedSlot = scheduleOptions.find(
+      (s) => s.key === selectedSchedule
+    );
+
+    const payload = {
+      appointmentHopeId: uuidv4(),
+      appointmentNo: slot.appointment_no,
+      appointmentDate: new Date(),
+      appointmentStatusId: uuidv4(),
+      channelId: "123e4567-e89b-12d3-a456-426614174000",
+      calendarId: slot.calendar_id,
+      hospitalId: "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+      contactId: uuidv4(),
+      masterObjectId: slot.master_object_id,
+      note: formData.description,
+      isWaitingList: false,
+      appointmentFromTime: fromTime,
+      appointmentToTime: toTime,
+      isWalkin: true,
+      isLogged: false,
+      createByService: uuidv4(),
+    };
+
+    try {
+      const response = await fetch(
+        "http://localhost:3211/api/v1/appointments",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-userid": "test",
+            "x-username": "test",
+            "x-source": "test",
+            "x-orgid": "2",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+      const result = await response.json();
+      console.log(result, " <<<< result");
+    } catch (error) {
+      console.log(error, " <<<< error");
+    }
+
+
     const newEvent: Event = {
       id: uuidv4(),
       title: formData.title,
@@ -137,7 +182,7 @@ export default function AddEventModal({
 
   return (
     <form className="flex flex-col gap-3" onSubmit={handleSubmit(onSubmit)}>
-      <Input {...register("title")} label="Event Name" placeholder="Enter event name" variant="bordered" isInvalid={!!errors.title} errorMessage={errors.title?.message} />
+      <Input {...register("title")} label="MR patient" placeholder="Enter mr patient" variant="bordered" isInvalid={!!errors.title} errorMessage={errors.title?.message} />
       <Textarea {...register("description")} label="Description" placeholder="Enter event description" variant="bordered" />
       <Input
         type="date"
