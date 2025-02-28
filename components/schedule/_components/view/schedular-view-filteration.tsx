@@ -60,7 +60,7 @@ export default function SchedulerViewFilteration({
         "Content-Type": "application/json"
       };
       
-      const resp = await axios.get(`http://localhost:3001/api/v1/locations`, {
+      const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/locations`, {
         headers
       });
       let data = resp.data.data;
@@ -101,7 +101,7 @@ export default function SchedulerViewFilteration({
         "Content-Type": "application/json"
       };
       
-      const resp = await axios.get(`http://localhost:3001/api/v1/master-objects/location?id=${locationId}`, {
+      const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/master-objects/location?id=${locationId}`, {
         headers
       });
 

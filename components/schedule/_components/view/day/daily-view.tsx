@@ -11,58 +11,6 @@ import axios from "axios";
 
 const timeIntervals = [15, 30, 60]; // Available time slots
 
-// API response with available slots
-const availableData = {
-  data: [
-    {
-        id: "05ae1010-0ff8-4b45-932b-ac6d9d1419ef",
-        master_object_id: "7f33d35b-ceb6-43fb-8460-d84c941fce33",
-        calendar_title: "dr. Allan Archie Tjahja Sangian, SpA",
-        calendar_description: "OPD Doctor dr. Allan Archie Tjahja Sangian, SpA",
-        start_date: "2025-03-20",
-        end_date: "2025-03-21",
-        from_time: "08:30:00",
-        to_time: "17:00:00",
-        day: 2,
-        location_id: "987e6543-e21b-34d2-a654-426614174999",
-        allocation_type: "3",
-        quota: {
-            total: 2,
-            walk_in: 0,
-            waiting_list: 0
-        },
-        is_allow_waiting_list: true,
-        is_allow_digital_channel: true,
-        is_all_day: false,
-        group_id: null,
-        reference_id: "e7133d51-cbff-4f8f-83ce-26ccbc1227c5",
-        status_id: "active",
-        series_id: null,
-        schedule_category_id: ["6"],
-        quota_options: {
-            waiting_list: 0,
-            walk_in: 0
-        },
-        repetition_type: "weekly",
-        repetition_interval: 1,
-        repetition_dom: null,
-        repetition_week: null,
-        repetition_month: null,
-        booking_options: null,
-        created_by: "xxx",
-        created_name: "xxx",
-        created_from: "xxx",
-        created_date: "2025-02-26T09:48:59.925Z",
-        modified_by: "xxx",
-        modified_name: "xxx",
-        modified_from: "xxx",
-        modified_date: "2025-02-26T09:48:59.925Z",
-        deleted_date: null
-    }
-],
-code: "OK"
-};
-
 // API response with booked slots
 const bookedData = {
   data: [
@@ -99,6 +47,7 @@ export default function DailyView({
   const [timelinePosition, setTimelinePosition] = useState<number>(0);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [availableData, setAvailable] = useState<any>([]);
+  const [bookedData, setBookedData] = useState<any>([]);
   const { showModal } = useModalContext();
 
   const handleNextDay = () => {
@@ -148,7 +97,7 @@ export default function DailyView({
     if (filterLocation) params.append("locationId", filterLocation);
     params.append("page", "all");
   
-    const resp = await axios.get(`http://localhost:3001/api/v1/calendars?${params.toString()}`, {
+    const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/calendars?${params.toString()}`, {
       headers
     });
     let data = resp.data.data;
@@ -166,6 +115,38 @@ export default function DailyView({
       appointment_no: index,
     }));
     setAvailable(data);
+    getAppointments();
+  }
+
+  const getAppointments = async () => {
+    if (!filterLocation) return;
+  
+    const headers = {
+      "x-userid": "xxx",
+      "x-username": "xxx",
+      "x-source": "xxx",
+      "x-orgid": 2,
+      "x-lang": "en",
+      "Content-Type": "application/json"
+    };
+  
+    const params = new URLSearchParams();
+    if (filterObject) params.append("masterObjectId", filterObject);
+    if (filterLocation) params.append("locationId", filterLocation);
+    params.append("appointmentFromDate", (new Date()).toISOString())
+    params.append("appointmentToDate", (new Date()).toISOString())
+    params.append("page", "all");
+  
+    const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/appointments?${params.toString()}`, {
+      headers
+    });
+    let data = resp.data.data;
+
+    data = data.map(({ appointmentFromTime, appointmentToTime }: any) => ({
+      from: appointmentFromTime.slice(0, 5),
+      to: appointmentToTime.slice(0, 5),
+    }));
+    setBookedData(data)
   }
 
   function handleAddEventDay(fromTime: string, toTime: string, slot: any) {
@@ -188,6 +169,7 @@ export default function DailyView({
           fromTime={fromTime} 
           toTime={toTime} 
           slot={slot}
+          refreshCalendar={getCalendars}
         />
       ),
       getter: async () => {
@@ -196,11 +178,6 @@ export default function DailyView({
     });
   }
   
-
-  const bookedSlots = bookedData.data.map(({ appointmentFromTime, appointmentToTime }) => ({
-    from: appointmentFromTime.slice(0, 5),
-    to: appointmentToTime.slice(0, 5),
-  }));
 
   const getFormattedDayTitle = () => currentDate.toDateString();
 
@@ -287,7 +264,7 @@ export default function DailyView({
           ) : (
             timeSlots.map((slot, index) => {
               const availableSlot = availableData.find(({ from, to }: any) => slot >= from && slot < to);
-              const isBooked = bookedSlots.some(({ from, to }) => slot >= from && slot < to);
+              const isBooked = bookedData.some(({ from, to }: any) => slot >= from && slot < to);
               const isAvailable = !!availableSlot;
 
               let slotClass = "bg-gray-800 text-gray-400"; // Default

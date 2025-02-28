@@ -1,7 +1,7 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Iqbal Cahyo Scheduler",
+  name: "Smart Scheduler",
   description: "Create your modern scheduler in just one minute..",
   navItems: [
     {
