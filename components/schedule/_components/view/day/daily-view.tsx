@@ -148,7 +148,7 @@ export default function DailyView({
     if (filterLocation) params.append("locationId", filterLocation);
     params.append("page", "all");
   
-    const resp = await axios.get(`http://localhost:3000/api/v1/calendars?${params.toString()}`, {
+    const resp = await axios.get(`http://localhost:3001/api/v1/calendars?${params.toString()}`, {
       headers
     });
     let data = resp.data.data;
