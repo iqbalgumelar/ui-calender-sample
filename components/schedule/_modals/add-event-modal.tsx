@@ -21,12 +21,13 @@ import { v4 as uuidv4 } from "uuid";
 
 export default function AddEventModal({
   CustomAddEventModal, fromTime, // Accept props
-  toTime, slot
+  toTime, slot, refreshCalendar
 }: {
   CustomAddEventModal?: React.FC<{ register: any; errors: any }>;
   fromTime?: string;
   toTime?: string;
   slot?: any;
+  refreshCalendar?: any;
 }) {
   const { onClose, data } = useModalContext();
   const { handlers } = useScheduler();
@@ -145,7 +146,7 @@ export default function AddEventModal({
 
     try {
       const response = await fetch(
-        "http://localhost:3211/api/v1/appointments",
+        `${process.env.API_CALENDAR_URL}/api/v1/appointments`,
         {
           method: "POST",
           headers: {
@@ -160,6 +161,7 @@ export default function AddEventModal({
       );
       const result = await response.json();
       console.log(result, " <<<< result");
+      refreshCalendar();
     } catch (error) {
       console.log(error, " <<<< error");
     }
