@@ -152,16 +152,23 @@ export default function DailyView({
       headers
     });
     let data = resp.data.data;
-  
-    // Convert API time to comparable format (HH:mm)
-    data = data.map(({ from_time, to_time }: any) => ({
-      from: from_time.slice(0, 5), // Extract HH:mm
-      to: to_time.slice(0, 5),
+
+     // Convert API time to comparable format (HH:mm)
+    data = data.map((el: any, index: number) => ({
+      from: el.from_time.slice(0, 5), // Extract HH:mm
+      to: el.to_time.slice(0, 5),
+      no: index + 1,
+      calendar_id: el.id,
+      resource_type: el.schedule_category_id,
+      allocation_type: el.allocation_type,
+      location_id: el.location_id,
+      master_object_id: el.master_object_id,
+      appointment_no: index,
     }));
     setAvailable(data);
-  };
+  }
 
-  function handleAddEventDay(fromTime: string, toTime: string) {
+  function handleAddEventDay(fromTime: string, toTime: string, slot: any) {
     console.log("Adding event:", fromTime, "to", toTime);
   
     const [fromHours, fromMinutes] = fromTime.split(":").map(Number);
@@ -180,6 +187,7 @@ export default function DailyView({
           CustomAddEventModal={CustomEventModal?.CustomAddEventModal?.CustomForm}
           fromTime={fromTime} 
           toTime={toTime} 
+          slot={slot}
         />
       ),
       getter: async () => {
@@ -308,7 +316,7 @@ export default function DailyView({
                       const toMinutes = String(toDate.getMinutes()).padStart(2, "0");
                       const toTime = `${toHours}:${toMinutes}`;
 
-                      handleAddEventDay(timeSlots[index], toTime);
+                      handleAddEventDay(timeSlots[index], toTime, availableSlot);
                     }
                   }}
                   className={`cursor-pointer px-6 py-3 h-[40px] flex items-center justify-between border-b border-default-200 w-full text-sm ${slotClass}`}
