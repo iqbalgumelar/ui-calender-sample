@@ -3,11 +3,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@nextui-org/button";
 
 import { Tabs, Tab } from "@nextui-org/tabs";
-import { Calendar, CalendarDaysIcon } from "lucide-react";
+import { Calendar, CalendarDaysIcon, ClipboardList } from "lucide-react";
 import { BsCalendarMonth, BsCalendarWeek } from "react-icons/bs";
 
 import AddEventModal from "../../_modals/add-event-modal";
-import AddScheduleModal from "../../_modals/add-schedule-modal";
+import ManageScheduleModalContent from "../../_modals/manage-schedule-modal";
 import DailyView from "./day/daily-view";
 import MonthView from "./month/month-view";
 import WeeklyView from "./week/week-view";
@@ -32,6 +32,7 @@ export default function SchedulerViewFilteration({
   classNames?: ClassNames;
 }) {
   const { showModal: showAddEventModal } = useModalContext();
+  const { showModal: showAddScheduleModal } = useModalContext();
   const [clientSide, setClientSide] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedObject, setSelectedObject] = useState<string>();
@@ -139,6 +140,18 @@ export default function SchedulerViewFilteration({
     });
   }
 
+  const handleManageSchedule = () => {
+    if (!selectedLocation || !selectedObject) return;
+  
+    console.log("Manage Schedule Clicked!", { selectedLocation, selectedObject });
+  
+    showAddScheduleModal({
+      title: "Manage Schedule",
+      body: <ManageScheduleModalContent selectedLocation={selectedLocation} selectedObject={selectedObject} />,
+      modalClassName: "max-w-5xl min-h-[600px]"
+    });
+  };
+
   const viewsSelector = isMobile ? views?.mobileViews : views?.views;
 
   return (
@@ -238,10 +251,28 @@ export default function SchedulerViewFilteration({
             )}
           </Tabs>
 
-          {/* Add Event Button */}
-          <Button onClick={() => handleAddEvent()} className={"absolute top-0 right-0 " + classNames?.buttons?.addEvent} color="primary" startContent={<Calendar />}>
-            Add Appointment
-          </Button>
+          <div className="absolute top-0 right-0 flex space-x-2">
+            {selectedLocation && selectedObject && (
+              <Button
+                onClick={() => handleManageSchedule()} // New function for Manage Schedule
+                className={classNames?.buttons?.addEvent}
+                color="secondary"
+                startContent={<ClipboardList  />}
+              >
+                Manage Schedule
+              </Button>
+            )}
+
+            <Button
+              onClick={() => handleAddEvent()}
+              className={classNames?.buttons?.addEvent}
+              color="primary"
+              startContent={<Calendar  />}
+            >
+              Add Appointment
+            </Button>
+          </div>
+
         </div>
       </div>
     </div>
