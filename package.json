@@ -17,6 +17,10 @@
     "react-dom": "^18.0.0"
   },
   "dependencies": {
+    "@heroui/input": "^2.4.15",
+    "@heroui/react": "^2.7.4",
+    "@heroui/select": "^2.4.15",
+    "@heroui/table": "^2.2.14",
     "@hookform/resolvers": "^3.9.0",
     "@internationalized/date": "^3.5.6",
     "@nextui-org/button": "2.0.38",

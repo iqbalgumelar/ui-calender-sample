@@ -23,78 +23,62 @@ interface ModalContextType {
 
 const ModalContext = createContext<ModalContextType | undefined>(undefined);
 
-export const ModalProvider: React.FC<{ children: ReactNode }> = ({
-  children,
-}) => {
-  const [modalContent, setModalContent] = useState<{
-    title?: ReactNode;
-    body?: ReactNode;
-    modalClassName?: string;
-    footer?: ReactNode;
-  } | null>(null);
+export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [modals, setModals] = useState<
+    { id: string; title?: ReactNode; body?: ReactNode; footer?: ReactNode; modalClassName?: string }[]
+  >([]);
 
-  const [data, setData] = useState<any | null>(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-
-  const showModal = async ({
+  const showModal = ({
     title,
     body,
     footer,
     modalClassName,
-    getter,
   }: {
     title: ReactNode;
     body: ReactNode;
     footer?: ReactNode;
     modalClassName?: string;
-    getter?: () => Promise<any>;
   }) => {
-    setModalContent({ title, body, footer, modalClassName });
+    const newModal = {
+      id: crypto.randomUUID(), // Unique ID for each modal
+      title,
+      body,
+      footer,
+      modalClassName,
+    };
 
-    if (getter) {
-      try {
-        const result = await getter();
-        setData(result);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setData(null);
-      }
-    } else {
-      setData(null);
-    }
+    setModals((prev) => [...prev, newModal]); // Stack modals instead of replacing
+  };
 
-    onOpen();
+  const closeModal = (id: string) => {
+    setModals((prev) => prev.filter((modal) => modal.id !== id));
   };
 
   return (
-    <ModalContext.Provider value={{ showModal, onClose, data }}>
+    <ModalContext.Provider value={{ showModal, onClose: () => closeModal(modals[modals.length - 1]?.id || ""), data: null }}>
       {children}
-      <Modal
-        backdrop="blur"
-        classNames={{
-          backdrop: "max-h-screen overflow-hidden",
-          wrapper: "max-h-screen overflow-hidden",
-        }}
-        isOpen={isOpen}
-        onOpenChange={onClose}
-      >
-        <ModalContent className={modalContent?.modalClassName || ""}>
-          {modalContent && (
-            <>
-              {modalContent.title && (
-                <ModalHeader>{modalContent.title}</ModalHeader>
-              )}
-              {modalContent.body && <ModalBody>{modalContent.body}</ModalBody>}
-              {modalContent.footer && (
-                <ModalFooter>{modalContent.footer}</ModalFooter>
-              )}
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      {modals.map((modal) => (
+        <Modal
+          key={modal.id}
+          isOpen={true}
+          onOpenChange={() => closeModal(modal.id)}
+          backdrop="blur"
+          classNames={{
+            backdrop: "max-h-screen overflow-hidden",
+            wrapper: "max-h-screen overflow-hidden",
+          }}
+        >
+          <ModalContent className={modal.modalClassName || ""}>
+            {modal.title && <ModalHeader>{modal.title}</ModalHeader>}
+            {modal.body && <ModalBody>{modal.body}</ModalBody>}
+            {modal.footer && <ModalFooter>{modal.footer}</ModalFooter>}
+          </ModalContent>
+        </Modal>
+      ))}
     </ModalContext.Provider>
   );
 };
+
 
 // Hook to use modal context
 export const useModalContext = (): ModalContextType => {
