@@ -34,7 +34,7 @@ export default function ManageScheduleModalContent({ selectedLocation, selectedO
     setLoading(true);
     try {
       const response = await axios.get(
-        `${process.env.API_CALENDAR_URL}/api/v1/calendars?objectId=${selectedObject}&locationId=${selectedLocation}&page=${page}`,
+        `http://localhost:3001/api/v1/calendars?objectId=${selectedObject}&locationId=${selectedLocation}&page=${page}`,
         {
           headers: {
             "x-userid": "test1",
@@ -105,9 +105,9 @@ export default function ManageScheduleModalContent({ selectedLocation, selectedO
                     <TableCell>{item.to_time.slice(0, 5)}</TableCell>
                     <TableCell>{item.calendar_title}</TableCell>
                     <TableCell className="flex gap-2">
-                      <button className="text-blue-500 hover:text-blue-700">
+                      {/* <button className="text-blue-500 hover:text-blue-700">
                         <Eye size={18} />
-                      </button>
+                      </button> */}
                       <button
                         className="text-green-500 hover:text-green-700"
                         onClick={(e) => {

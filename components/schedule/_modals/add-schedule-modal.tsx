@@ -97,7 +97,7 @@ export default function AddScheduleForm({ selectedLocation, selectedObject, sele
     try {
       const updatePayload = {id: id, referenceId: referenceId, ...payload}
       if (selectedSchedule) {
-        await axios.post(`${process.env.API_CALENDAR_URL}/api/v1/calendars/bulk`, [updatePayload], {
+        await axios.post(`http://localhost:3001/api/v1/calendars/bulk`, [updatePayload], {
           headers: {
             "x-userid": "test1",
             "x-username": "test2",
@@ -108,7 +108,7 @@ export default function AddScheduleForm({ selectedLocation, selectedObject, sele
           },
         });
       } else {
-        await axios.post("${process.env.API_CALENDAR_URL}/api/v1/calendars", payload, {
+        await axios.post("http://localhost:3001/api/v1/calendars", payload, {
           headers: {
             "x-userid": "test1",
             "x-username": "test2",

@@ -54,12 +54,14 @@ export default function DailyView({
     const nextDay = new Date(currentDate);
     nextDay.setDate(currentDate.getDate() + 1);
     setCurrentDate(nextDay);
+    getAppointments();
   };
 
   const handlePrevDay = () => {
     const prevDay = new Date(currentDate);
     prevDay.setDate(currentDate.getDate() - 1);
     setCurrentDate(prevDay);
+    getAppointments();
   };
 
   const calculateEndTime = (startTime: any, duration: any) => {
@@ -103,7 +105,7 @@ export default function DailyView({
     params.append("endDate", selectedDate);
     params.append("page", "all");
   
-    const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/calendars?${params.toString()}`, {
+    const resp = await axios.get(`http://localhost:3001/api/v1/calendars?${params.toString()}`, {
       headers
     });
     let data = resp.data.data;
@@ -139,11 +141,11 @@ export default function DailyView({
     const params = new URLSearchParams();
     if (filterObject) params.append("masterObjectId", filterObject);
     if (filterLocation) params.append("locationId", filterLocation);
-    params.append("appointmentFromDate", (new Date()).toISOString())
-    params.append("appointmentToDate", (new Date()).toISOString())
+    params.append("appointmentFromDate", (new Date(currentDate)).toISOString())
+    params.append("appointmentToDate", (new Date(currentDate)).toISOString())
     params.append("page", "all");
   
-    const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/appointments?${params.toString()}`, {
+    const resp = await axios.get(`http://localhost:3001/api/v1/appointments?${params.toString()}`, {
       headers
     });
     let data = resp.data.data;
@@ -156,8 +158,8 @@ export default function DailyView({
     setBookedData(data)
   }
 
-  function handleAddEventDay(fromTime: string, toTime: string, slot: any) {
-    console.log("Adding event:", fromTime, "to", toTime);
+  function handleAddEventDay(fromTime: string, toTime: string, slot: any, booked: any) {
+    console.log("Adding event:", fromTime, "to", toTime, 'slot', slot);
   
     const [fromHours, fromMinutes] = fromTime.split(":").map(Number);
     const [toHours, toMinutes] = toTime.split(":").map(Number);
@@ -176,6 +178,9 @@ export default function DailyView({
           fromTime={fromTime} 
           toTime={toTime} 
           slot={slot}
+          booked={booked}
+          startDate={startDate}
+          endDate={endDate}
           refreshCalendar={getCalendars}
         />
       ),
@@ -301,7 +306,7 @@ export default function DailyView({
                       const toMinutes = String(toDate.getMinutes()).padStart(2, "0");
                       const toTime = `${toHours}:${toMinutes}`;
 
-                      handleAddEventDay(timeSlots[index], toTime, availableSlot);
+                      handleAddEventDay(timeSlots[index], toTime, availableSlot, booked);
                     }
                   }}
                   className={`cursor-pointer px-6 py-3 h-[40px] flex items-center justify-between border-b border-default-200 w-full text-sm ${slotClass}`}
