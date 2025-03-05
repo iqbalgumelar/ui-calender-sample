@@ -144,9 +144,10 @@ export default function DailyView({
     });
     let data = resp.data.data;
 
-    data = data.map(({ appointmentFromTime, appointmentToTime }: any) => ({
+    data = data.map(({ appointmentFromTime, appointmentToTime, note }: any) => ({
       from: appointmentFromTime.slice(0, 5),
       to: appointmentToTime.slice(0, 5),
+      note
     }));
     setBookedData(data)
   }
@@ -270,7 +271,8 @@ export default function DailyView({
           ) : (
             timeSlots.map((slot, index) => {
               const availableSlot = availableData.find(({ from, to }: any) => slot >= from && slot < to);
-              const isBooked = bookedData.some(({ from, to }: any) => slot >= from && slot < to);
+              const booked = bookedData.find(({ from, to }: any) => slot >= from && slot < to);
+              const isBooked = !!booked;
               const isAvailable = !!availableSlot;
 
               let slotClass = "bg-gray-800 text-gray-400"; // Default
@@ -304,7 +306,7 @@ export default function DailyView({
                   }}
                   className={`cursor-pointer px-6 py-3 h-[40px] flex items-center justify-between border-b border-default-200 w-full text-sm ${slotClass}`}
                 >
-                  <span>{timeSlots[index]} - {calculateEndTime(timeSlots[index], timeInterval)}</span>
+                  <span>{timeSlots[index]} - {calculateEndTime(timeSlots[index], timeInterval)} {booked && booked.note ? ` | ${booked.note}` : '' }</span>
                   {statusText && <span>{statusText}</span>}
                 </motion.div>
               );
