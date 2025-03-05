@@ -263,14 +263,14 @@ export default function SchedulerViewFilteration({
               </Button>
             )}
 
-            <Button
+            {/* <Button
               onClick={() => handleAddEvent()}
               className={classNames?.buttons?.addEvent}
               color="primary"
               startContent={<Calendar  />}
             >
               Add Appointment
-            </Button>
+            </Button> */}
           </div>
 
         </div>

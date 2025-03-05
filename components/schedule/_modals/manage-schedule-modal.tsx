@@ -105,9 +105,9 @@ export default function ManageScheduleModalContent({ selectedLocation, selectedO
                     <TableCell>{item.to_time.slice(0, 5)}</TableCell>
                     <TableCell>{item.calendar_title}</TableCell>
                     <TableCell className="flex gap-2">
-                      <button className="text-blue-500 hover:text-blue-700">
+                      {/* <button className="text-blue-500 hover:text-blue-700">
                         <Eye size={18} />
-                      </button>
+                      </button> */}
                       <button
                         className="text-green-500 hover:text-green-700"
                         onClick={(e) => {

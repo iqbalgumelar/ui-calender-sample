@@ -18,15 +18,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { EventFormData, eventSchema, Variant, Event } from "@/types/index";
 import { useScheduler } from "@/providers/schedular-provider";
 import { v4 as uuidv4 } from "uuid";
+import { BsSkipStart } from "react-icons/bs";
 
 export default function AddEventModal({
   CustomAddEventModal, fromTime, // Accept props
-  toTime, slot, startDate, endDate, refreshCalendar
+  toTime, slot, booked, startDate, endDate, refreshCalendar
 }: {
   CustomAddEventModal?: React.FC<{ register: any; errors: any }>;
   fromTime?: string;
   toTime?: string;
   slot?: any;
+  booked?: any;
   startDate?: Date;
   endDate?: Date;
   refreshCalendar?: any;
@@ -36,6 +38,7 @@ export default function AddEventModal({
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedMasterObject, setSelectedMasterObject] = useState<string>("");
+  const [description, setDecription] = useState<string>("");
   const [masterObjects, setMasterObjects] = useState<{ key: string; name: string }[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<string>("");
   const [scheduleOptions, setScheduleOptions] = useState<
@@ -53,7 +56,6 @@ export default function AddEventModal({
   } = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
-      title: "",
       description: "",
       startDate: new Date(),
       endDate: new Date(),
@@ -67,7 +69,6 @@ export default function AddEventModal({
   useEffect(() => {
     if (data) {
       reset({
-        title: data.title,
         description: data.description || "",
         startDate: data.startDate,
         endDate: data.endDate,
@@ -116,6 +117,9 @@ export default function AddEventModal({
   }, [selectedDate, selectedMasterObject]);
 
   useEffect(() => {
+    if (booked) {
+      setDecription(booked.note)
+    }
     if (startDate) {
       console.log("🚀 ~ startDate:", startDate);
       const timeZoneOffset = startDate.getTimezoneOffset() * 60000; // Convert offset to milliseconds
@@ -123,7 +127,7 @@ export default function AddEventModal({
       setSelectedDate(adjustedDate);
       setValue("startDate", adjustedDate);
     }
-  }, [startDate, setValue]);
+  }, [startDate, booked, setValue]);
 
   const onSubmit: SubmitHandler<EventFormData> = async (formData) => {
     console.log("🚀 ~ formData:", formData);
@@ -189,8 +193,8 @@ export default function AddEventModal({
 
   return (
     <form className="flex flex-col gap-3" onSubmit={handleSubmit(onSubmit)}>
-      <Input {...register("title")} label="MR patient" placeholder="Enter mr patient" variant="bordered" isInvalid={!!errors.title} errorMessage={errors.title?.message} />
-      <Textarea {...register("description")} label="Description" placeholder="Enter event description" variant="bordered" />
+      {/* <Input {...register("title")}  label="MR patient" placeholder="Enter mr patient" variant="bordered" isInvalid={!!errors.title} errorMessage={errors.title?.message} /> */}
+      <Textarea {...register("description")} value={description} onChange={(e) => setDecription(e.target.value)} label="Description" placeholder="Enter event description" variant="bordered" />
       <Input
         type="date"
         label="Select Date"
@@ -202,59 +206,11 @@ export default function AddEventModal({
           setValue("startDate", date);
         }}
       />
-      
-      { (
-            <Dropdown backdrop="blur">
-              {/* <DropdownTrigger>
-                <Button variant="flat" className="justify-between w-fit my-4">
-                  {scheduleOptions.find((s) => s.key === selectedSchedule)
-                    ?.name || "Select Schedule"}
-                </Button>
-              </DropdownTrigger> */}
-              
-              {/* <DropdownMenu
-                aria-label="Schedule selection"
-                variant="flat"
-                selectionMode="single"
-                selectedKeys={[selectedSchedule]}
-                onSelectionChange={(keys) => {
-                  const selectedKey = keys.currentKey as string;
-                  setSelectedSchedule(selectedKey);
-
-                  const selectedScheduleData = scheduleOptions.find(
-                    (s) => s.key === selectedKey
-                  );
-
-                  if (selectedScheduleData) {
-                    const [startHour, startMinute] =
-                      selectedScheduleData.startTime.split(":").map(Number);
-                    const [endHour, endMinute] =
-                      selectedScheduleData.endTime.split(":").map(Number);
-
-                    const startDate = new Date(selectedDate);
-                    startDate.setHours(startHour, startMinute);
-
-                    const endDate = new Date(selectedDate);
-                    endDate.setHours(endHour, endMinute);
-
-                    setValue("schedule", selectedKey);
-                    setValue("startDate", startDate);
-                    setValue("endDate", endDate);
-                  }
-                }}
-              >
-                {scheduleOptions.map((schedule) => (
-                  <DropdownItem key={schedule.key}>{schedule.name}</DropdownItem>
-                ))}
-              </DropdownMenu> */}
-            </Dropdown>
-          )}
-          {/* Display Selected Time */}
-          {fromTime && toTime && (
-            <p className="text-lg font-semibold text-blue-600">
-              📅 Selected Time: {fromTime} - {toTime}
-            </p>
-          )}
+      {fromTime && toTime && (
+        <p className="text-lg font-semibold text-blue-600">
+          📅 Selected Time: {fromTime} - {toTime}
+        </p>
+      )}
 
       <ModalFooter>
         <Button color="danger" variant="light" onPress={onClose}>Cancel</Button>

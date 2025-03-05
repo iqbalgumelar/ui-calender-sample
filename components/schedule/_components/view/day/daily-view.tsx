@@ -152,18 +152,16 @@ export default function DailyView({
     setBookedData(data)
   }
 
-  function handleAddEventDay(fromTime: string, toTime: string, slot: any) {
+  function handleAddEventDay(fromTime: string, toTime: string, slot: any, booked: any) {
     console.log("Adding event:", fromTime, "to", toTime, 'slot', slot);
   
     const [fromHours, fromMinutes] = fromTime.split(":").map(Number);
     const [toHours, toMinutes] = toTime.split(":").map(Number);
   
     const startDate = new Date(currentDate);
-    console.log("🚀 ~ startDate:", startDate);
     startDate.setHours(fromHours, fromMinutes);
   
     const endDate = new Date(currentDate);
-    console.log("🚀 ~ endDate:", endDate);
     endDate.setHours(toHours, toMinutes);
   
     showModal({
@@ -174,6 +172,7 @@ export default function DailyView({
           fromTime={fromTime} 
           toTime={toTime} 
           slot={slot}
+          booked={booked}
           startDate={startDate}
           endDate={endDate}
           refreshCalendar={getCalendars}
@@ -301,7 +300,7 @@ export default function DailyView({
                       const toMinutes = String(toDate.getMinutes()).padStart(2, "0");
                       const toTime = `${toHours}:${toMinutes}`;
 
-                      handleAddEventDay(timeSlots[index], toTime, availableSlot);
+                      handleAddEventDay(timeSlots[index], toTime, availableSlot, booked);
                     }
                   }}
                   className={`cursor-pointer px-6 py-3 h-[40px] flex items-center justify-between border-b border-default-200 w-full text-sm ${slotClass}`}
