@@ -21,12 +21,14 @@ import { v4 as uuidv4 } from "uuid";
 
 export default function AddEventModal({
   CustomAddEventModal, fromTime, // Accept props
-  toTime, slot, refreshCalendar
+  toTime, slot, startDate, endDate, refreshCalendar
 }: {
   CustomAddEventModal?: React.FC<{ register: any; errors: any }>;
   fromTime?: string;
   toTime?: string;
   slot?: any;
+  startDate?: Date;
+  endDate?: Date;
   refreshCalendar?: any;
 }) {
   const { onClose, data } = useModalContext();
@@ -53,8 +55,8 @@ export default function AddEventModal({
     defaultValues: {
       title: "",
       description: "",
-      startDate: null,
-      endDate: null,
+      startDate: new Date(),
+      endDate: new Date(),
       variant: data?.variant || "primary",
       color: data?.color || "blue",
       schedule: "",
@@ -114,13 +116,17 @@ export default function AddEventModal({
   }, [selectedDate, selectedMasterObject]);
 
   useEffect(() => {
-    if (data?.startDate) {
-      setSelectedDate(data.startDate);
-      setValue("startDate", data.startDate);
+    if (startDate) {
+      console.log("🚀 ~ startDate:", startDate);
+      const timeZoneOffset = startDate.getTimezoneOffset() * 60000; // Convert offset to milliseconds
+      const adjustedDate = new Date(startDate.getTime() - timeZoneOffset);
+      setSelectedDate(adjustedDate);
+      setValue("startDate", adjustedDate);
     }
-  }, [data, setValue]);
+  }, [startDate, setValue]);
 
   const onSubmit: SubmitHandler<EventFormData> = async (formData) => {
+    console.log("🚀 ~ formData:", formData);
     const selectedSlot = scheduleOptions.find(
       (s) => s.key === selectedSchedule
     );
@@ -128,7 +134,7 @@ export default function AddEventModal({
     const payload = {
       appointmentHopeId: uuidv4(),
       appointmentNo: slot.appointment_no,
-      appointmentDate: new Date(),
+      appointmentDate: formData.startDate,
       appointmentStatusId: uuidv4(),
       channelId: "123e4567-e89b-12d3-a456-426614174000",
       calendarId: slot.calendar_id,
@@ -146,7 +152,7 @@ export default function AddEventModal({
 
     try {
       const response = await fetch(
-        `${process.env.API_CALENDAR_URL}/api/v1/appointments`,
+        `http://localhost:3001/api/v1/appointments`,
         {
           method: "POST",
           headers: {
@@ -165,7 +171,6 @@ export default function AddEventModal({
     } catch (error) {
       console.log(error, " <<<< error");
     }
-
 
     const newEvent: Event = {
       id: uuidv4(),

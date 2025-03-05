@@ -54,12 +54,14 @@ export default function DailyView({
     const nextDay = new Date(currentDate);
     nextDay.setDate(currentDate.getDate() + 1);
     setCurrentDate(nextDay);
+    getAppointments();
   };
 
   const handlePrevDay = () => {
     const prevDay = new Date(currentDate);
     prevDay.setDate(currentDate.getDate() - 1);
     setCurrentDate(prevDay);
+    getAppointments();
   };
 
   const calculateEndTime = (startTime: any, duration: any) => {
@@ -97,7 +99,7 @@ export default function DailyView({
     if (filterLocation) params.append("locationId", filterLocation);
     params.append("page", "all");
   
-    const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/calendars?${params.toString()}`, {
+    const resp = await axios.get(`http://localhost:3001/api/v1/calendars?${params.toString()}`, {
       headers
     });
     let data = resp.data.data;
@@ -133,11 +135,11 @@ export default function DailyView({
     const params = new URLSearchParams();
     if (filterObject) params.append("masterObjectId", filterObject);
     if (filterLocation) params.append("locationId", filterLocation);
-    params.append("appointmentFromDate", (new Date()).toISOString())
-    params.append("appointmentToDate", (new Date()).toISOString())
+    params.append("appointmentFromDate", (new Date(currentDate)).toISOString())
+    params.append("appointmentToDate", (new Date(currentDate)).toISOString())
     params.append("page", "all");
   
-    const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/appointments?${params.toString()}`, {
+    const resp = await axios.get(`http://localhost:3001/api/v1/appointments?${params.toString()}`, {
       headers
     });
     let data = resp.data.data;
@@ -150,15 +152,17 @@ export default function DailyView({
   }
 
   function handleAddEventDay(fromTime: string, toTime: string, slot: any) {
-    console.log("Adding event:", fromTime, "to", toTime);
+    console.log("Adding event:", fromTime, "to", toTime, 'slot', slot);
   
     const [fromHours, fromMinutes] = fromTime.split(":").map(Number);
     const [toHours, toMinutes] = toTime.split(":").map(Number);
   
     const startDate = new Date(currentDate);
+    console.log("🚀 ~ startDate:", startDate);
     startDate.setHours(fromHours, fromMinutes);
   
     const endDate = new Date(currentDate);
+    console.log("🚀 ~ endDate:", endDate);
     endDate.setHours(toHours, toMinutes);
   
     showModal({
@@ -169,6 +173,8 @@ export default function DailyView({
           fromTime={fromTime} 
           toTime={toTime} 
           slot={slot}
+          startDate={startDate}
+          endDate={endDate}
           refreshCalendar={getCalendars}
         />
       ),

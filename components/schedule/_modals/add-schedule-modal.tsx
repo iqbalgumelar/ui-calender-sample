@@ -1,160 +1,200 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { ModalFooter } from "@nextui-org/modal";
-import { Button } from "@nextui-org/button";
-import { Input, Textarea } from "@nextui-org/input";
-
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@nextui-org/dropdown";
-
+import React, { useState } from "react";
+import axios from "axios";
+import { Button } from "@heroui/button";
+import { Textarea, Input } from "@heroui/input";
+import { RadioGroup, Radio } from "@heroui/radio";
 import { useModalContext } from "@/providers/modal-provider";
-import { SubmitHandler, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { EventFormData, eventSchema, Variant, Event } from "@/types/index";
-import { useScheduler } from "@/providers/schedular-provider";
-import { v4 as uuidv4 } from "uuid";
 
-export default function AddScheduleModal({
-  CustomAddEventModal,
-}: {
-  CustomAddEventModal?: React.FC<{ register: any; errors: any }>;
-}) {
-  const { onClose, data } = useModalContext();
-  const { handlers } = useScheduler();
+const intervals = [15, 30, 60];
+const days = [
+  { name: "Senin", value: 1 },
+  { name: "Selasa", value: 2 },
+  { name: "Rabu", value: 3 },
+  { name: "Kamis", value: 4 },
+  { name: "Jumat", value: 5 },
+  { name: "Sabtu", value: 6 },
+  { name: "Minggu", value: 7 },
+];
 
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedMasterObject, setSelectedMasterObject] = useState<string>("");
-  const [masterObjects, setMasterObjects] = useState<{ key: string; name: string }[]>([]);
-  const [selectedSchedule, setSelectedSchedule] = useState<string>("");
-  const [scheduleOptions, setScheduleOptions] = useState<
-    { key: string; name: string; startTime: string; endTime: string }[]
-  >([]);
+export default function AddScheduleForm({ selectedLocation, selectedObject, selectedSchedule = null }) {
+  const { onClose } = useModalContext();
+  const id = selectedSchedule?.id || null;
+  const referenceId = selectedSchedule?.reference_id || null;
+  const [calendarTitle, setCalendarTitle] = useState(selectedSchedule?.calendar_title || "");
+  const [calendarDescription, setCalendarDescription] = useState(selectedSchedule?.calendar_description || "");
+  const [startDate, setStartDate] = useState(selectedSchedule?.start_date?.split("T")[0] || "");
+  const [interval, setInterval] = useState(15);
+  const [endDate, setEndDate] = useState(selectedSchedule?.end_date?.split("T")[0] || "");
+  const [startTime, setStartTime] = useState(selectedSchedule?.from_time?.slice(0, 5) || "00:00");
+  const [endTime, setEndTime] = useState(selectedSchedule?.to_time?.slice(0, 5) || "00:00");
+  const [selectedDay, setSelectedDay] = useState(selectedSchedule?.day || "");
+  const [scheduleType, setScheduleType] = useState(selectedSchedule?.scheduleCategoryId?.[0] || "");
+  const [total, setTotal] = useState(selectedSchedule?.quota?.total || 0);
+  const [walkIn, setWalkIn] = useState(selectedSchedule?.quota?.walkIn || 0);
+  const [waitingList, setWaitingList] = useState(selectedSchedule?.quota?.waitingList ||0);
+  const [errors, setErrors] = useState({});
 
-  const typedData = data as Event;
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-    setValue,
-  } = useForm<EventFormData>({
-    resolver: zodResolver(eventSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      startDate: null,
-      endDate: null,
-      variant: data?.variant || "primary",
-      color: data?.color || "blue",
-      schedule: "",
-      masterObjectId: "",
-    },
-  });
-
-  useEffect(() => {
-    if (data) {
-      reset({
-        title: data.title,
-        description: data.description || "",
-        startDate: data.startDate,
-        endDate: data.endDate,
-        variant: data.variant || "primary",
-        color: data.color || "blue",
-        schedule: data.schedule || "",
-        masterObjectId: data.masterObjectId || "",
-      });
+  // Generate time slots based on selected interval
+  const generateTimeSlots = (interval) => {
+    const times = [];
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += interval) {
+        times.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+      }
     }
-  }, [data, reset]);
+    return times;
+  };
+  const timeOptions = generateTimeSlots(interval);
 
-  useEffect(() => {
-    if (!selectedDate) return;
-    const fetchMasterObjects = async () => {
-      const response = {
-        data: [
-          { id: "fd6f4d17-5c97-48a4-9ff6-5262674131f5", title: "Master Object 1" },
-          { id: "b2345d67-8e97-42b4-81cd-6123456789ab", title: "Master Object 2" },
-        ],
-      };
-      const objects = response.data.map((obj) => ({ key: obj.id, name: obj.title }));
-      setMasterObjects(objects);
-    };
-    fetchMasterObjects();
-  }, [selectedDate]);
+  // Validation function
+  const validateForm = () => {
+    let newErrors = {};
 
-  useEffect(() => {
-    if (!selectedDate || !selectedMasterObject) return;
-    const fetchSchedules = async () => {
-      const response = {
-        data: [
-          { no: 1, appointment_range_time: "16:30 - 16:45", schedule_from_time: "16:30", schedule_to_time: "16:45", is_available: true },
-          { no: 2, appointment_range_time: "16:45 - 17:00", schedule_from_time: "16:45", schedule_to_time: "17:00", is_available: true },
-        ],
-      };
-      const availableSchedules = response.data
-        .filter((slot) => slot.is_available)
-        .map((slot) => ({
-          key: String(slot.no),
-          name: slot.appointment_range_time,
-          startTime: slot.schedule_from_time,
-          endTime: slot.schedule_to_time,
-        }));
-      setScheduleOptions(availableSchedules);
-    };
-    fetchSchedules();
-  }, [selectedDate, selectedMasterObject]);
+    if (!calendarTitle) newErrors.calendarTitle = "Calendar Title is required";
+    if (!calendarDescription) newErrors.calendarDescription = "Description is required";
+    if (!startDate) newErrors.startDate = "Start Date is required";
+    if (!endDate) newErrors.endDate = "End Date is required";
+    if (startDate && endDate && startDate > endDate) newErrors.dateRange = "Start Date cannot be after End Date";
+    if (!selectedDay) newErrors.selectedDay = "You must select a day";
+    if (!scheduleType) newErrors.scheduleType = "You must select a type";
+    if (startTime >= endTime) newErrors.timeRange = "Start Time must be before End Time";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-  const onSubmit: SubmitHandler<EventFormData> = (formData) => {
-    const selectedSlot = scheduleOptions.find((s) => s.key === selectedSchedule);
-    const newEvent: Event = {
-      id: uuidv4(),
-      title: formData.title,
-      startDate: selectedSlot ? new Date(`${formData.startDate} ${selectedSlot.startTime}`) : formData.startDate,
-      endDate: selectedSlot ? new Date(`${formData.startDate} ${selectedSlot.endTime}`) : formData.endDate,
-      variant: formData.variant,
-      description: formData.description,
-      schedule: selectedSchedule,
-      masterObjectId: formData.masterObjectId,
+  // Handle form submission
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    const payload = {
+      seriesId: selectedSchedule?.seriesId || null,
+      calendarTitle,
+      calendarDescription,
+      startDate,
+      endDate,
+      fromTime: startTime,
+      toTime: endTime,
+      day: selectedDay,
+      allocationType: "3",
+      isAllDay: false,
+      scheduleCategoryId: [scheduleType],
+      quotaOptions: { regular: total, walkIn, waitingList },
+      quota: { waitingList, walkIn, total },
+      repetitionType: "2",
+      repetitionInterval: 1,
+      repetitionDom: null,
+      repetitionWeek: null,
+      repetitionMonth: null,
+      isAllowWaitingList: true,
+      locationId: selectedLocation,
+      masterObjectId: selectedObject,
+      bookingOptions: null,
+      isAllowDigitalChannel: false,
     };
-    if (!typedData?.id) handlers.handleAddEvent(newEvent);
-    else handlers.handleUpdateEvent(newEvent, typedData.id);
-    onClose();
+
+    try {
+      const updatePayload = {id: id, referenceId: referenceId, ...payload}
+      if (selectedSchedule) {
+        await axios.post(`http://localhost:3001/api/v1/calendars/bulk`, [updatePayload], {
+          headers: {
+            "x-userid": "test1",
+            "x-username": "test2",
+            "x-source": "test3",
+            "x-orgid": "2",
+            "x-lang": "en",
+            "Content-Type": "application/json",
+          },
+        });
+      } else {
+        await axios.post("http://localhost:3001/api/v1/calendars", payload, {
+          headers: {
+            "x-userid": "test1",
+            "x-username": "test2",
+            "x-source": "test3",
+            "x-orgid": "2",
+            "x-lang": "en",
+            "Content-Type": "application/json",
+          },
+        });
+      }
+      onClose();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    }
   };
 
   return (
-    <form className="flex flex-col gap-3" onSubmit={handleSubmit(onSubmit)}>
-      <Input {...register("title")} label="Event Name" placeholder="Enter event name" variant="bordered" isInvalid={!!errors.title} errorMessage={errors.title?.message} />
-      <Textarea {...register("description")} label="Description" placeholder="Enter event description" variant="bordered" />
-      <Input type="date" label="Select Date" variant="bordered" onChange={(e) => {
-        const date = new Date(e.target.value);
-        setSelectedDate(date);
-        setValue("startDate", date);
-      }} />
-      {selectedDate && (
-        <Dropdown backdrop="blur">
-          <DropdownTrigger>
-            <Button variant="flat" className="justify-between w-fit my-4">
-              {masterObjects.find((obj) => obj.key === selectedMasterObject)?.name || "Select Master Object"}
-            </Button>
-          </DropdownTrigger>
-          <DropdownMenu aria-label="Master Object selection" variant="flat" selectionMode="single" selectedKeys={[selectedMasterObject]} onSelectionChange={(keys) => {
-            const selectedKey = keys.currentKey as string;
-            setSelectedMasterObject(selectedKey);
-            setValue("masterObjectId", selectedKey);
-          }}>
-            {masterObjects.map((obj) => <DropdownItem key={obj.key}>{obj.name}</DropdownItem>)}
-          </DropdownMenu>
-        </Dropdown>
-      )}
-      <ModalFooter>
-        <Button color="danger" variant="light" onPress={onClose}>Cancel</Button>
-        <Button color="primary" type="submit">Save Event</Button>
-      </ModalFooter>
-    </form>
+    <div className="p-4 space-y-4">
+      <Input label="Calendar Title" value={calendarTitle} onChange={(e) => setCalendarTitle(e.target.value)} />
+      <Textarea label="Calendar Description" value={calendarDescription} onChange={(e) => setCalendarDescription(e.target.value)} />
+      
+      <div className="flex gap-4">
+        <Input type="date" label="Start Date" value={startDate} onChange={(e) => setStartDate(e.target.value)} error={errors.startDate} />
+        <Input type="date" label="End Date" value={endDate} onChange={(e) => setEndDate(e.target.value)} error={errors.endDate || errors.dateRange} />
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="shrink-0">
+          <label className="block text-sm font-medium">Interval</label>
+          <select value={interval} onChange={(e) => setInterval(Number(e.target.value))} className="border p-2 rounded-md px-4">
+            {intervals.map((value) => (
+              <option key={value} value={value}>{value} minutes</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm font-medium">Start Time</label>
+          <select value={startTime} onChange={(e) => setStartTime(e.target.value)} className="border p-2 rounded-md w-full">
+            {timeOptions.map((time) => <option key={time} value={time}>{time}</option>)}
+          </select>
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm font-medium">End Time</label>
+          <select value={endTime} onChange={(e) => setEndTime(e.target.value)} className="border p-2 rounded-md w-full">
+            {timeOptions.map((time) => <option key={time} value={time}>{time}</option>)}
+          </select>
+          {errors.timeRange && <p className="text-red-500 text-sm">{errors.timeRange}</p>}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">Select Day</label>
+        <select
+          value={selectedDay}
+          onChange={(e) => setSelectedDay(Number(e.target.value))}
+          className="border p-2 rounded-md w-full"
+        >
+          <option value="">Select a day</option> {/* Placeholder option */}
+          {days.map(({ name, value }) => (
+            <option key={value} value={value}>
+              {name}
+            </option>
+          ))}
+        </select>
+        {errors.selectedDay && <p className="text-red-500 text-sm">{errors.selectedDay}</p>}
+      </div>
+
+
+      <RadioGroup label="Type">
+        <div className="flex gap-4">
+          <Radio value="1" checked={scheduleType === "1"} onChange={() => setScheduleType("1")}>Regular</Radio>
+          <Radio value="2" checked={scheduleType === "2"} onChange={() => setScheduleType("2")}>BPJS</Radio>
+        </div>
+        {errors.scheduleType && <p className="text-red-500 text-sm">{errors.scheduleType}</p>}
+      </RadioGroup>
+
+      <div className="flex gap-4">
+        <Input type="number" label="Total" value={total} onChange={(e) => setTotal(Number(e.target.value))} />
+        <Input type="number" label="Walk-in" value={walkIn} onChange={(e) => setWalkIn(Number(e.target.value))} />
+        <Input type="number" label="Waiting List" value={waitingList} onChange={(e) => setWaitingList(Number(e.target.value))} />
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button onClick={onClose} variant="light">Cancel</Button>
+        <Button color="primary" onClick={handleSubmit}>{selectedSchedule !== null ? "Update" : "Submit"}</Button>
+      </div>
+    </div>
   );
 }
