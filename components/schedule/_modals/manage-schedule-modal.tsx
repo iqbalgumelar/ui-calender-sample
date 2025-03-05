@@ -74,7 +74,10 @@ export default function ManageScheduleModalContent({ selectedLocation, selectedO
             e.stopPropagation();
             showScheduleForm({
               title: "Add Schedule",
-              body: <AddScheduleForm selectedLocation={selectedLocation} selectedObject={selectedObject} />,
+              body: <AddScheduleForm 
+                selectedLocation={selectedLocation} 
+                selectedObject={selectedObject}
+                onRefresh={() => fetchScheduleData(currentPage)} />,
             });
           }}
         >

@@ -148,7 +148,7 @@ export default function SchedulerViewFilteration({
     showAddScheduleModal({
       title: "Manage Schedule",
       body: <ManageScheduleModalContent selectedLocation={selectedLocation} selectedObject={selectedObject} />,
-      modalClassName: "max-w-5xl min-h-[600px]"
+      modalClassName: "max-w-5xl min-h-[600px]",
     });
   };
 
@@ -157,7 +157,7 @@ export default function SchedulerViewFilteration({
   return (
     <div className="flex w-full flex-col">
       {/* Filter Dropdown */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 px-3">
         <h2 className="text-lg font-semibold">Filter Events</h2>
         <div className="flex space-x-4">
           <select

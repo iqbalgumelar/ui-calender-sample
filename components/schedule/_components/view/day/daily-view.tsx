@@ -241,7 +241,7 @@ export default function DailyView({
           ))}
         </select>
       </div>
-      <div className="flex ml-auto  gap-3">
+      <div className="flex ml-auto  gap-3 mb-2">
           {prevButton ? (
             <div onClick={handlePrevDay}>{prevButton}</div>
           ) : (
