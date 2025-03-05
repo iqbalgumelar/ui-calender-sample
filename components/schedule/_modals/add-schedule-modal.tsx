@@ -18,7 +18,7 @@ const days = [
   { name: "Minggu", value: 7 },
 ];
 
-export default function AddScheduleForm({ selectedLocation, selectedObject, selectedSchedule = null }) {
+export default function AddScheduleForm({ selectedLocation, selectedObject, selectedSchedule = null, onRefresh }) {
   const { onClose } = useModalContext();
   const id = selectedSchedule?.id || null;
   const referenceId = selectedSchedule?.reference_id || null;
@@ -119,6 +119,7 @@ export default function AddScheduleForm({ selectedLocation, selectedObject, sele
           },
         });
       }
+      onRefresh();
       onClose();
     } catch (error) {
       console.error("Error submitting form:", error);

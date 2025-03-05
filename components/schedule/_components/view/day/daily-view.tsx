@@ -83,7 +83,7 @@ export default function DailyView({
   }, [currentDate, filterLocation, filterObject]);
 
   const getCalendars = async () => {
-    if (!filterLocation) return;
+    if (!currentDate || !filterLocation || !filterObject) return;
   
     const headers = {
       "x-userid": "xxx",
@@ -97,6 +97,12 @@ export default function DailyView({
     const params = new URLSearchParams();
     if (filterObject) params.append("objectId", filterObject);
     if (filterLocation) params.append("locationId", filterLocation);
+    
+    const month = ('0'+ (currentDate.getMonth()+1)).slice(-2)
+    const date = ('0'+ (currentDate.getDate())).slice(-2)
+    const selectedDate = `${currentDate.getFullYear()}-${month}-${date}`;
+    params.append("startDate", selectedDate);
+    params.append("endDate", selectedDate);
     params.append("page", "all");
   
     const resp = await axios.get(`http://localhost:3001/api/v1/calendars?${params.toString()}`, {
@@ -235,7 +241,7 @@ export default function DailyView({
           ))}
         </select>
       </div>
-      <div className="flex ml-auto  gap-3">
+      <div className="flex ml-auto  gap-3 mb-2">
           {prevButton ? (
             <div onClick={handlePrevDay}>{prevButton}</div>
           ) : (
