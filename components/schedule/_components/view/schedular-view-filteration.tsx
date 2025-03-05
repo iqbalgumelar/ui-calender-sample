@@ -17,7 +17,7 @@ import axios from "axios";
 import { locationData, objectBylocationData } from "@/services/mocksFilter/masterMock";
 
 // Sample Master Object Data (Replace with API response)
-
+process.env.API_CALENDAR_URL='http://localhost:3001'
 
 export default function SchedulerViewFilteration({
   views = {
