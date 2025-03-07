@@ -8,6 +8,7 @@ import { Chip } from "@nextui-org/chip";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { time } from "console";
 import axios from "axios";
+import { useScheduler } from "@/providers/schedular-provider";
 
 const timeIntervals = [15, 30, 60]; // Available time slots
 
@@ -49,6 +50,7 @@ export default function DailyView({
   const [availableData, setAvailable] = useState<any>([]);
   const [bookedData, setBookedData] = useState<any>([]);
   const { showModal } = useModalContext();
+  const { handlers } = useScheduler();
 
   const handleNextDay = () => {
     const nextDay = new Date(currentDate);
@@ -154,12 +156,17 @@ export default function DailyView({
     });
     let data = resp.data.data;
 
-    data = data.map(({ appointmentFromTime, appointmentToTime, note }: any) => ({
+    data = data.map(({ appointmentFromTime, appointmentToTime, note, ...rest }: any) => ({
+      id: rest.appointmentId,
+      title: note,
+      startDate: rest.appointmentDate,
+      endDate: rest.appointmentDate,
       from: appointmentFromTime.slice(0, 5),
       to: appointmentToTime.slice(0, 5),
-      note
+      note,
     }));
-    setBookedData(data)
+    setBookedData(data);
+    handlers.handleInitialEvents(data);
   }
 
   function handleAddEventDay(fromTime: string, toTime: string, slot: any, booked: any) {
