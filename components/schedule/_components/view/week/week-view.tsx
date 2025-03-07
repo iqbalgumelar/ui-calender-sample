@@ -15,47 +15,6 @@ const hours = Array.from(
   (_, i) => `${i.toString().padStart(2, "0")}:00`
 );
 
-interface ChipData {
-  id: number;
-  color: "primary" | "warning" | "danger";
-  title: string;
-  description: string;
-}
-
-const chipData: ChipData[] = [
-  {
-    id: 1,
-    color: "primary",
-    title: "Ads Campaign Nr1",
-    description: "Day 1 of 5: Google Ads, Target Audience: SMB-Alpha",
-  },
-  {
-    id: 2,
-    color: "warning",
-    title: "Ads Campaign Nr2",
-    description:
-      "All Day: Day 2 of 5: AdSense + FB, Target Audience: SMB2-Delta3",
-  },
-  {
-    id: 3,
-    color: "danger",
-    title: "Critical Campaign Nr3",
-    description: "Day 3 of 5: High-Impact Ads, Target: E-Commerce Gamma",
-  },
-  {
-    id: 4,
-    color: "primary",
-    title: "Ads Campaign Nr4",
-    description: "Day 4 of 5: FB Ads, Audience: Retailers-Zeta",
-  },
-  {
-    id: 5,
-    color: "warning",
-    title: "Campaign Ending Soon",
-    description: "Final Day: Monitor closely, Audience: Delta2-Beta",
-  },
-];
-
 // Animation Variants
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -180,20 +139,6 @@ export default function WeeklyView({
         initial="hidden"
         animate="visible"
       >
-        {/* {chipData.map((chip) => (
-          <motion.div key={chip.id} variants={itemVariants}>
-            <Chip
-              color={chip.color}
-              className="min-w-full p-4 min-h-fit rounded-lg"
-              variant="flat"
-            >
-              <div className="title">
-                <span className="text-sm">{chip.title}</span>
-              </div>
-              <div className="description">{chip.description}</div>
-            </Chip>
-          </motion.div>
-        ))} */}
       </motion.div>
 
       <div className="flex ml-auto gap-3">
@@ -235,7 +180,7 @@ export default function WeeklyView({
             {daysOfWeek.map((day, idx) => (
               <div key={idx} className="relative flex flex-col">
                 <div className="sticky bg-default-100 top-0 z-20 flex-grow flex items-center justify-center">
-                  <div className="text-center p-4">
+                  <div className={clsx("text-lg font-semibold text-center p-4", new Date().toDateString() === day.toDateString() && "text-secondary-500")}>
                     <div className="text-lg font-semibold">
                       {getters.getDayName(day.getDay())}
                     </div>
@@ -292,61 +237,75 @@ export default function WeeklyView({
           </div>
 
           <div className="col-span-7 bg-default-50 grid h-full grid-cols-7">
+            {/* Time Slot Mapping */}
             {Array.from({ length: 7 }, (_, dayIndex) => {
-              const dayEvents = getters.getEventsForDay(
-                daysOfWeek[dayIndex % 7].getDate(),
-                currentDate
-              );
-
+              const availableData = [
+                { date: "2025-03-04", from: "09:00", to: "12:00" }, // March 4, 2025
+                { date: "2025-03-05", from: "14:00", to: "16:00" }, // March 5, 2025
+                { date: "2025-03-06", from: "10:00", to: "12:30" }, // March 6, 2025
+              ];
+              
+              const bookedData = [
+                { date: "2025-03-04", from: "10:00", to: "11:00", note: "Doctor Slot" },
+                { date: "2025-03-05", from: "14:30", to: "15:30", note: "IPD Slot" },
+                { date: "2025-03-06", from: "09:00", to: "10:15", note: "Emergency Slot" },
+              ];
+              
+              
               return (
-                <div
-                  key={`day-${dayIndex}`}
-                  className="col-span-1  border-default-200 z-20 relative transition duration-300 cursor-pointer border-r border-b text-center text-sm text-muted-foreground"
-                  onClick={() => {
-                    handleAddEventWeek(dayIndex, detailedHour as string);
-                  }}
-                >
-                  <AnimatePresence mode="wait">
-                    {dayEvents?.map((event, eventIndex) => {
-                      const { height, left, maxWidth, minWidth, top, zIndex } =
-                        handlers.handleEventStyling(event, dayEvents);
+                <div key={`day-${dayIndex}`} className="relative col-span-1 border-r border-b border-default-200">
+                  {Array.from({ length: 96 }, (_, slotIndex) => {
+                    // Convert slot index to hour and minute
+                    const hour = Math.floor(slotIndex / 4);
+                    const minutes = (slotIndex % 4) * 15;
+                    let nextHour = hour;
+                    let nextMinutes = minutes + 15;
 
-                      return (
-                        <div
-                          key={`event-${event.id}-${eventIndex}`}
-                          style={{
-                            minHeight: height,
-                            height,
-                            top: top,
-                            left: left,
-                            maxWidth: maxWidth,
-                            minWidth: minWidth,
-                          }}
-                          className="flex transitio transition-all duration-1000 flex-grow flex-col z-50 absolute"
-                        >
-                          <EventStyled
-                            event={{
-                              ...event,
-                              CustomEventComponent,
-                              minmized: true,
-                            }}
-                            CustomEventModal={CustomEventModal}
-                          />
-                        </div>
-                      );
-                    })}
-                  </AnimatePresence>
-                  {/* Render hour slots */}
-                  {Array.from({ length: 24 }, (_, hourIndex) => (
-                    <div
-                      key={`day-${dayIndex}-hour-${hourIndex}`}
-                      className="col-span-1 border-default-200 h-16 z-20 relative transition duration-300 cursor-pointer border-r border-b text-center text-sm text-muted-foreground"
-                    >
-                      <div className="absolute bg-default-100 flex items-center justify-center text-xs opacity-0 transition duration-250 hover:opacity-100 w-full h-full">
-                        Add Event
+                    if (nextMinutes === 60) {
+                      nextMinutes = 0;
+                      nextHour += 1;
+                    }
+
+                    const startTime = `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+                    const endTime = `${nextHour.toString().padStart(2, "0")}:${nextMinutes.toString().padStart(2, "0")}`;
+
+                    // Get the current day's date as YYYY-MM-DD
+                    const currentDateStr = daysOfWeek[dayIndex % 7].toISOString().split("T")[0];
+
+                    // Check if slot is booked for the current day
+                    const booked = bookedData.find(({ date, from, to }) => date === currentDateStr && startTime >= from && startTime < to);
+                    const isBooked = !!booked;
+
+                    // Check if slot is available for the current day
+                    const availableSlot = availableData.find(({ date, from, to }) => date === currentDateStr && startTime >= from && startTime < to);
+                    const isAvailable = !!availableSlot;
+
+                    // Determine the slot's style and behavior
+                    let slotClass = "hover:bg-default-100 text-xs text-muted-foreground";
+                    let slotContent = `${startTime} - ${endTime}`;
+                    let isClickable = false;
+
+                    if (isBooked) {
+                      slotClass = "bg-red-500 text-white text-xs font-bold rounded-md shadow-md";
+                      slotContent = `⛔ ${booked.note || "Booked"}`;
+                    } else if (isAvailable) {
+                      slotClass = "bg-green-200 text-black text-xs font-bold rounded-md shadow-md";
+                      slotContent = `✅ Available`;
+                      isClickable = true;
+                    }
+
+                    return (
+                      <div
+                        key={`day-${dayIndex}-slot-${slotIndex}`}
+                        className={`relative h-[16px] border-b border-default-200 flex items-center justify-center cursor-pointer transition duration-300 ${slotClass} ${isClickable ? "hover:bg-green-300" : "cursor-not-allowed"}`}
+                        onClick={() => {
+                          if (isClickable) handleAddEventWeek(dayIndex, startTime);
+                        }}
+                      >
+                        {slotContent}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })}
