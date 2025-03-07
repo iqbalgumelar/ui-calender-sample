@@ -34,7 +34,7 @@ export default function ManageScheduleModalContent({ selectedLocation, selectedO
     setLoading(true);
     try {
       const response = await axios.get(
-        `http://localhost:3001/api/v1/calendars?objectId=${selectedObject}&locationId=${selectedLocation}&page=${page}`,
+        `${process.env.API_CALENDAR_URL}/api/v1/calendars?objectId=${selectedObject}&locationId=${selectedLocation}&page=${page}`,
         {
           headers: {
             "x-userid": "test1",

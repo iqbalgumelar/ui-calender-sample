@@ -105,7 +105,7 @@ export default function DailyView({
     params.append("endDate", selectedDate);
     params.append("page", "all");
   
-    const resp = await axios.get(`http://localhost:3001/api/v1/calendars?${params.toString()}`, {
+    const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/calendars?${params.toString()}`, {
       headers
     });
     let data = resp.data.data;
@@ -145,7 +145,7 @@ export default function DailyView({
     params.append("appointmentToDate", (new Date(currentDate)).toISOString())
     params.append("page", "all");
   
-    const resp = await axios.get(`http://localhost:3001/api/v1/appointments?${params.toString()}`, {
+    const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/appointments?${params.toString()}`, {
       headers
     });
     let data = resp.data.data;
