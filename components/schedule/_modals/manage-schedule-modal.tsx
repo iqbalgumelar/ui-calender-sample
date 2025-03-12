@@ -8,7 +8,7 @@ import { useModalContext } from "@/providers/modal-provider";
 import { Plus, Eye, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import AddScheduleForm from "./add-schedule-modal";
 
-export default function ManageScheduleModalContent({ selectedLocation, selectedObject }) {
+export default function ManageScheduleModalContent({ selectedLocation, selectedObject, selectedDate }) {
   const { onClose } = useModalContext();
   const { showModal: showScheduleForm } = useModalContext();
   const [scheduleData, setScheduleData] = useState([]);
@@ -27,14 +27,29 @@ export default function ManageScheduleModalContent({ selectedLocation, selectedO
 
     fetchScheduleData(currentPage); // Fetch data based on page
 
-  }, [selectedLocation, selectedObject, currentPage]);
+  }, [selectedLocation, selectedObject, currentPage, selectedDate]);
+
+  const dateFormatted = (value: Date) => {
+    return [
+      value.getFullYear(),
+      String(value.getMonth() + 1).padStart(2, '0'),
+      String(value.getDate()).padStart(2, '0')
+    ].join('-');
+  }
 
   // 🔹 Fetch data with pagination
   const fetchScheduleData = async (page) => {
     setLoading(true);
     try {
+      const queryUrl = new URLSearchParams();
+      queryUrl.append('objectId', selectedObject);
+      queryUrl.append('locationId', selectedLocation);
+      queryUrl.append('page', page);
+      queryUrl.append('endDate', dateFormatted(selectedDate?.startDate));
+      queryUrl.append('startDate', dateFormatted(selectedDate?.endDate));
+      queryUrl.append('day', selectedDate?.selectedDay);
       const response = await axios.get(
-        `${process.env.API_CALENDAR_URL}/api/v1/calendars?objectId=${selectedObject}&locationId=${selectedLocation}&page=${page}`,
+        `${process.env.API_CALENDAR_URL}/api/v1/calendars?` + queryUrl.toString(),
         {
           headers: {
             "x-userid": "test1",

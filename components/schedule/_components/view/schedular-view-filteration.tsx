@@ -140,14 +140,24 @@ export default function SchedulerViewFilteration({
     });
   }
 
+  const getDateRange = () => {
+    const today = new Date();
+    const selectedDate = today.getDate();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+    const selectedDay = today.getDay() + 1;
+
+    return { startDate, endDate, selectedDate, selectedDay };
+  }
+
   const handleManageSchedule = () => {
     if (!selectedLocation || !selectedObject) return;
   
-    console.log("Manage Schedule Clicked!", { selectedLocation, selectedObject });
-  
+    const selectedDate = getDateRange();
+    console.log("Manage Schedule Clicked! 222", { selectedLocation, selectedObject, selectedDate });
     showAddScheduleModal({
       title: "Manage Schedule",
-      body: <ManageScheduleModalContent selectedLocation={selectedLocation} selectedObject={selectedObject} />,
+      body: <ManageScheduleModalContent selectedLocation={selectedLocation} selectedObject={selectedObject} selectedDate={selectedDate} />,
       modalClassName: "max-w-5xl min-h-[600px]",
     });
   };
