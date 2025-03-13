@@ -30,6 +30,7 @@ export default function DailyView({
   classNames,
   filterLocation,
   filterObject,
+  filterOrganization,
 }: {
   prevButton?: React.ReactNode;
   nextButton?: React.ReactNode;
@@ -38,6 +39,7 @@ export default function DailyView({
   classNames?: { prev?: string; next?: string; addEvent?: string };
   filterLocation?: string;
   filterObject?: string;
+  filterOrganization?: string;
 }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const hoursColumnRef = useRef<HTMLDivElement>(null);
@@ -80,7 +82,7 @@ export default function DailyView({
 
   useEffect(() => {
     getCalendars();
-  }, [currentDate, filterLocation, filterObject]);
+  }, [currentDate, filterLocation, filterObject, filterOrganization]);
 
   const getCalendars = async () => {
     if (!currentDate || !filterLocation || !filterObject) return;
@@ -145,6 +147,7 @@ export default function DailyView({
     const params = new URLSearchParams();
     if (filterObject) params.append("masterObjectId", filterObject);
     if (filterLocation) params.append("locationId", filterLocation);
+    if (filterOrganization) params.append("hospitalId", filterOrganization);
     params.append("appointmentFromDate", (new Date(currentDate)).toISOString())
     params.append("appointmentToDate", (new Date(currentDate)).toISOString())
     params.append("page", "all");
