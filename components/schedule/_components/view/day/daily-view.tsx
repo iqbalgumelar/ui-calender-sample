@@ -8,6 +8,8 @@ import { Chip } from "@nextui-org/chip";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { time } from "console";
 import axios from "axios";
+import { Input } from "@heroui/input";
+import { ButtonGroup, Select, SelectItem } from "@heroui/react";
 
 const timeIntervals = [15, 30, 60]; // Available time slots
 
@@ -127,9 +129,17 @@ export default function DailyView({
       location_id: el.location_id,
       master_object_id: el.master_object_id,
       appointment_no: index,
+      raw: el,
     }));
     setAvailable(data);
     getAppointments();
+
+    console.log('CalendarsData', data)
+    // setTimelineSetting({
+    //   startTime: data[0].from,
+    //   endTime: data[0].to,
+    // })
+    // console.log('getCalendarsEnd')
   }
 
   const getAppointments = async () => {
@@ -201,7 +211,7 @@ export default function DailyView({
   const getFormattedDayTitle = () => currentDate.toDateString();
 
   // Generate time slots based on the selected interval
-  const timeSlots = Array.from({ length: (24 * 60) / timeInterval }, (_, i) => {
+  const defaultTimeSlots = Array.from({ length: (24 * 60) / timeInterval }, (_, i) => {
     const hour = Math.floor((i * timeInterval) / 60);
     const minutes = (i * timeInterval) % 60;
     return `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
@@ -227,6 +237,135 @@ export default function DailyView({
     });
   }
 
+  // Interval to Flexible
+  const [selectedTimeStart, setSelectedTimeStart] = useState<any>();
+  const [selectedTimeEnd, setSelectedTimeEnd] = useState<any>();
+  const [selectedTimeAppointmentInput, setSelectedTimeAppointmentInput] = useState<any>();
+  const [selectedPeriodDurationTime, setSelectedPeriodDurationTime] = useState<any>();
+  const [timeSlots, setTimeSlots] = useState<any>(defaultTimeSlots);
+  const [selectedCalendar, setSelectedCalendar] = useState<any>();
+
+  // useEffect(() => {
+  //   console.log('selectedTimeAppointmentInput', selectedTimeAppointmentInput)
+  //   if (!selectedTimeAppointmentInput || selectedTimeAppointmentInput < 1) { return; }
+  //   const t = generateTimeIntervals(selectedTimeStart, selectedTimeEnd, Number(selectedTimeAppointmentInput));
+  //   console.log('t', t)
+  //   if (t) { setTimeInterval(t.timeIntervalMinutes) }
+  // }, [selectedTimeAppointmentInput])
+  useEffect(() => {
+    if (!(selectedCalendar && availableData)) { return; }
+    const selected = availableData.find((x: any) => x.calendar_id === selectedCalendar)
+    setTimelineSetting({
+      startTime: selected.from,
+      endTime: selected.to,
+    })
+    console.log('d', selected)
+    setSelectedTimeAppointmentInput(selected.raw.quota.total || 0)
+    const t = generateTimeIntervals(selected.from, selected.to, Number(selected.raw.quota.total));
+    console.log('selectedCalendar', t)
+    setTimeInterval(t.timeIntervalMinutes)
+    setTimeSlots(t.timeIntervalsFullDay)
+    // setTimeSlots(t.timeIntervals)
+    // setTimeInterval(t.timeIntervalMinutes)
+    // onClickSaveTimeSlot()
+  }, [selectedCalendar])
+
+  const onClickChangeTimeSlot = () => {
+    if (!selectedTimeAppointmentInput || selectedTimeAppointmentInput < 1) { return; }
+    const t = generateTimeIntervals(selectedTimeStart, selectedTimeEnd, Number(selectedTimeAppointmentInput));
+    console.log('onClickChangeTimeSlot', t)
+    if (t) { setTimeSlots(t.timeIntervals) }
+  }
+  const onClickSaveTimeSlot = () => {
+    if (!selectedTimeAppointmentInput || selectedTimeAppointmentInput < 1) { return; }
+    console.log('onClickSaveTimeSlot', selectedTimeStart, selectedTimeEnd, Number(selectedTimeAppointmentInput))
+    const t = generateTimeIntervals(selectedTimeStart, selectedTimeEnd, Number(selectedTimeAppointmentInput));
+    console.log('onClickSaveTimeSlot', t)
+    if (t) { setTimeInterval(t.timeIntervalMinutes) }
+  }
+  const onClickResetTimeSlot = () => {
+    setSelectedTimeAppointmentInput('');
+    setTimeInterval(15)
+    console.log('reset: defaultTimeSlots', defaultTimeSlots)
+    console.log('reset: generateTimeSlotDefault', generateTimeSlotDefault())
+    setTimeSlots(generateTimeSlotDefault())
+  }
+
+  const setTimelineSetting = (data: any) => {
+    setSelectedTimeStart(data.startTime);
+    setSelectedTimeEnd(data.endTime);
+    setSelectedPeriodDurationTime(getTimeDifference(data.startTime, data.endTime))
+    console.log('setTimelineSetting', data)
+  }
+
+  const getTimeDifference = (startTime: string, endTime: string) => {
+    // Convert times to minutes
+    const startMinutes = parseInt(startTime.split(":")[0]) * 60 + parseInt(startTime.split(":")[1]);
+    const endMinutes = parseInt(endTime.split(":")[0]) * 60 + parseInt(endTime.split(":")[1]);
+    // Calculate the difference in minutes
+    const diffMinutes = endMinutes - startMinutes;
+    // Handle negative differences (e.g., if endTime is earlier than startTime)
+    if (diffMinutes < 0) {
+        throw new Error("End time must be later than or equal to start time.");
+    }
+    // Convert the difference back to HH:MM format
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffMins = diffMinutes % 60;
+    const diffString = `${String(diffHours).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}`;
+    return diffString;
+}
+
+const generateTimeIntervals = (startTime: string, endTime: string, numberOfIntervals: number) => {
+  // Konversi waktu ke menit
+  const startMinutes = parseInt(startTime.split(":")[0]) * 60 + parseInt(startTime.split(":")[1]);
+  const endMinutes = parseInt(endTime.split(":")[0]) * 60 + parseInt(endTime.split(":")[1]);
+  // Hitung total menit
+  const totalMinutes = endMinutes - startMinutes;
+  // Hitung interval dalam menit, dibulatkan ke atas
+  const intervalMinutes = Math.ceil(totalMinutes / (numberOfIntervals - 1));
+  // Hasilkan waktu untuk setiap interval
+  const timeIntervals = [];
+  for (let i = 0; i < numberOfIntervals; i++) {
+      const currentMinutes = startMinutes + i * intervalMinutes;
+      const hours = Math.floor(currentMinutes / 60) % 24; // Pastikan jam tetap dalam format 24 jam
+      const minutes = currentMinutes % 60;
+      const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      timeIntervals.push(timeString);
+  }
+  // Hasilkan waktu untuk setiap interval dari 00:00 hingga 24:00
+  const timeIntervalsFullDay = [];
+  const fullDayMinutes = 1440; // 24 jam * 60 menit
+  // const fullDayIntervalMinutes = Math.ceil(fullDayMinutes / (numberOfIntervals - 1));
+  for (let i = 0; i * intervalMinutes <= fullDayMinutes; i++) {
+    const currentMinutes = i * intervalMinutes;
+    // Jika melebihi 1440 menit, set ke 24:00
+    if (currentMinutes >= fullDayMinutes) {
+      // timeIntervalsFullDay.push("24:00");
+      break;
+    }
+    const hours = Math.floor(currentMinutes / 60) % 24; // Pastikan jam tetap dalam format 24 jam
+    const minutes = currentMinutes % 60;
+    const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    timeIntervalsFullDay.push(timeString);
+  }
+
+  return {
+    timeIntervals,
+    timeIntervalsFullDay,
+    totalMinutes,
+    timeIntervalMinutes: intervalMinutes,
+  };
+}
+
+  const generateTimeSlotDefault = () => {
+    return Array.from({ length: (24 * 60) / timeInterval }, (_, i) => {
+      const hour = Math.floor((i * timeInterval) / 60);
+      const minutes = (i * timeInterval) % 60;
+      return `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+    });
+  }
+
+
   return (
     
     <div className="p-4">
@@ -234,7 +373,7 @@ export default function DailyView({
           {getFormattedDayTitle()}
         </h1>
       {/* Time Interval Selector */}
-      <div className="mb-4 flex items-center gap-3">
+      {/* <div className="mb-4 flex items-center gap-3">
         <label className="text-sm font-semibold">Time Interval:</label>
         <select
           value={timeInterval}
@@ -247,6 +386,28 @@ export default function DailyView({
             </option>
           ))}
         </select>
+      </div> */}
+      <div className="my-5 gap-2">
+        <div className="mb-2">
+          <Select className="max-w-xs" label="Calendar View" placeholder="Select calendar view"
+            value={selectedCalendar} onChange={(e) => setSelectedCalendar(e.target.value)}>
+            {availableData.map((item: any) => (
+              <SelectItem key={item.calendar_id} textValue={`Calendar ${item.from}-${item.to}`}>Calendar {item.from}-{item.to}</SelectItem>
+            ))}
+          </Select>
+        </div>
+        <div className="mb-2 flex items-center gap-2">
+          <Input type="time" label="Start Time" disabled={true} value={selectedTimeStart} onChange={(e) => setSelectedTimeStart(e.target.value)} />
+          <Input type="time" label="End Time" disabled={true} value={selectedTimeEnd} onChange={(e) => setSelectedTimeEnd(e.target.value)} />
+          <Input label="Total Quota on Period"
+            disabled={true}
+            value={`${selectedTimeAppointmentInput} Quota / ${timeInterval} minutes per slot`} />
+          {/* <ButtonGroup className="gap-2" isDisabled={!selectedCalendar}>
+          <Button onClick={onClickSaveTimeSlot}>Save</Button>
+          <Button onClick={onClickChangeTimeSlot}>Change</Button>
+          <Button onClick={onClickResetTimeSlot}>Reset</Button>
+          </ButtonGroup> */}
+        </div>
       </div>
       <div className="flex ml-auto  gap-3 mb-2">
           {prevButton ? (
