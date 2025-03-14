@@ -156,7 +156,7 @@ export default function AddEventModal({
 
     try {
       const response = await fetch(
-        `http://localhost:3001/api/v1/appointments`,
+        `${process.env.API_CALENDAR_URL}/api/v1/appointments`,
         {
           method: "POST",
           headers: {
