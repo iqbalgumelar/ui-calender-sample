@@ -132,14 +132,8 @@ export default function DailyView({
       raw: el,
     }));
     setAvailable(data);
+    if (data && data.length > 0) { setSelectedCalendar(data[0].calendar_id); }
     getAppointments();
-
-    console.log('CalendarsData', data)
-    // setTimelineSetting({
-    //   startTime: data[0].from,
-    //   endTime: data[0].to,
-    // })
-    // console.log('getCalendarsEnd')
   }
 
   const getAppointments = async () => {
@@ -245,13 +239,6 @@ export default function DailyView({
   const [timeSlots, setTimeSlots] = useState<any>(defaultTimeSlots);
   const [selectedCalendar, setSelectedCalendar] = useState<any>();
 
-  // useEffect(() => {
-  //   console.log('selectedTimeAppointmentInput', selectedTimeAppointmentInput)
-  //   if (!selectedTimeAppointmentInput || selectedTimeAppointmentInput < 1) { return; }
-  //   const t = generateTimeIntervals(selectedTimeStart, selectedTimeEnd, Number(selectedTimeAppointmentInput));
-  //   console.log('t', t)
-  //   if (t) { setTimeInterval(t.timeIntervalMinutes) }
-  // }, [selectedTimeAppointmentInput])
   useEffect(() => {
     if (!(selectedCalendar && availableData)) { return; }
     const selected = availableData.find((x: any) => x.calendar_id === selectedCalendar)
@@ -259,15 +246,14 @@ export default function DailyView({
       startTime: selected.from,
       endTime: selected.to,
     })
-    console.log('d', selected)
+    // console.log('CalendarSelected', selected)
     setSelectedTimeAppointmentInput(selected.raw.quota.total || 0)
     const t = generateTimeIntervals(selected.from, selected.to, Number(selected.raw.quota.total));
-    console.log('selectedCalendar', t)
+    // console.log('CalendarSelectedOptions', t)
     setTimeInterval(t.timeIntervalMinutes)
-    setTimeSlots(t.timeIntervalsFullDay)
-    // setTimeSlots(t.timeIntervals)
+    setTimeSlots(t.timeIntervals)
     // setTimeInterval(t.timeIntervalMinutes)
-    // onClickSaveTimeSlot()
+    // setTimeSlots(t.timeIntervalsFullDay)
   }, [selectedCalendar])
 
   const onClickChangeTimeSlot = () => {
@@ -295,7 +281,7 @@ export default function DailyView({
     setSelectedTimeStart(data.startTime);
     setSelectedTimeEnd(data.endTime);
     setSelectedPeriodDurationTime(getTimeDifference(data.startTime, data.endTime))
-    console.log('setTimelineSetting', data)
+    // console.log('setTimelineSetting', data)
   }
 
   const getTimeDifference = (startTime: string, endTime: string) => {
@@ -322,7 +308,7 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
   // Hitung total menit
   const totalMinutes = endMinutes - startMinutes;
   // Hitung interval dalam menit, dibulatkan ke atas
-  const intervalMinutes = Math.ceil(totalMinutes / (numberOfIntervals - 1));
+  const intervalMinutes = Math.ceil(totalMinutes / (numberOfIntervals - 0));
   // Hasilkan waktu untuk setiap interval
   const timeIntervals = [];
   for (let i = 0; i < numberOfIntervals; i++) {
@@ -390,7 +376,9 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
       <div className="my-5 gap-2">
         <div className="mb-2">
           <Select className="max-w-xs" label="Calendar View" placeholder="Select calendar view"
-            value={selectedCalendar} onChange={(e) => setSelectedCalendar(e.target.value)}>
+            selectedKeys={[selectedCalendar]}
+            value={selectedCalendar}
+            onChange={(e) => setSelectedCalendar(e.target.value)}>
             {availableData.map((item: any) => (
               <SelectItem key={item.calendar_id} textValue={`Calendar ${item.from}-${item.to}`}>Calendar {item.from}-{item.to}</SelectItem>
             ))}
@@ -401,7 +389,7 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
           <Input type="time" label="End Time" disabled={true} value={selectedTimeEnd} onChange={(e) => setSelectedTimeEnd(e.target.value)} />
           <Input label="Total Quota on Period"
             disabled={true}
-            value={`${selectedTimeAppointmentInput} Quota / ${timeInterval} minutes per slot`} />
+            value={`${selectedTimeAppointmentInput || '-'} Quota / ${timeInterval || '-'} minutes per slot`} />
           {/* <ButtonGroup className="gap-2" isDisabled={!selectedCalendar}>
           <Button onClick={onClickSaveTimeSlot}>Save</Button>
           <Button onClick={onClickChangeTimeSlot}>Change</Button>
