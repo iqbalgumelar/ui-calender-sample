@@ -1,81 +1,33 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useScheduler } from "@/providers/schedular-provider";
 import { Chip } from "@nextui-org/chip";
-import { AnimatePresence, motion } from "framer-motion"; // Import Framer Motion
 import { useModalContext } from "@/providers/modal-provider";
 import AddEventModal from "@/components/schedule/_modals/add-event-modal";
-import EventStyled from "../event-component/event-styled";
 import { Button } from "@nextui-org/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import clsx from "clsx";
 import { Event, CustomEventModal } from "@/types";
+import axios from "axios";
+import { motion } from "framer-motion";
 
 const hours = Array.from(
   { length: 24 },
   (_, i) => `${i.toString().padStart(2, "0")}:00`
 );
 
-interface ChipData {
-  id: number;
-  color: "primary" | "warning" | "danger";
-  title: string;
-  description: string;
-}
-
-const chipData: ChipData[] = [
-  {
-    id: 1,
-    color: "primary",
-    title: "Ads Campaign Nr1",
-    description: "Day 1 of 5: Google Ads, Target Audience: SMB-Alpha",
-  },
-  {
-    id: 2,
-    color: "warning",
-    title: "Ads Campaign Nr2",
-    description:
-      "All Day: Day 2 of 5: AdSense + FB, Target Audience: SMB2-Delta3",
-  },
-  {
-    id: 3,
-    color: "danger",
-    title: "Critical Campaign Nr3",
-    description: "Day 3 of 5: High-Impact Ads, Target: E-Commerce Gamma",
-  },
-  {
-    id: 4,
-    color: "primary",
-    title: "Ads Campaign Nr4",
-    description: "Day 4 of 5: FB Ads, Audience: Retailers-Zeta",
-  },
-  {
-    id: 5,
-    color: "warning",
-    title: "Campaign Ending Soon",
-    description: "Final Day: Monitor closely, Audience: Delta2-Beta",
-  },
-];
-
-// Animation Variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1, // Stagger children animations
+      staggerChildren: 0.1,
     },
   },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
 export default function WeeklyView({
   prevButton,
   nextButton,
-  CustomEventComponent,
   CustomEventModal,
   classNames,
   filterLocation,
@@ -89,17 +41,30 @@ export default function WeeklyView({
   filterLocation?: string;
   filterObject?: string;
 }) {
-  const { getters, handlers } = useScheduler();
+  const { getters } = useScheduler();
   const hoursColumnRef = useRef<HTMLDivElement>(null);
   const [detailedHour, setDetailedHour] = useState<string | null>(null);
   const [timelinePosition, setTimelinePosition] = useState<number>(0);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const { showModal } = useModalContext();
+  const [availableData, setAvailable] = useState<any>([]);
+  const [bookedData, setBookedData] = useState<any>([]);
 
-  const daysOfWeek = getters?.getDaysInWeek(
-    getters?.getWeekNumber(currentDate),
-    currentDate.getFullYear()
-  );
+  const getMondayOfWeek = (date: Date) => {
+    const newDate = new Date(date);
+    const day = newDate.getDay(); // Get current day (0 = Sunday, 6 = Saturday)
+    const diff = day === 0 ? -6 : 1 - day; // Adjust to Monday
+    newDate.setDate(newDate.getDate() + diff);
+    return newDate;
+  };
+  
+  // Get the correct Monday of the current week
+  const mondayOfWeek = getMondayOfWeek(currentDate);
+  const daysOfWeek = Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(mondayOfWeek);
+    day.setDate(mondayOfWeek.getDate() + i);
+    return day;
+  });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (!hoursColumnRef.current) return;
@@ -115,13 +80,130 @@ export default function WeeklyView({
     setTimelinePosition(y + 83);
   };
 
-  function handleAddEvent(event?: Event) {
+  useEffect(() => {
+      getCalendars();
+  }, [currentDate, filterLocation, filterObject]);
+
+  const getCalendars = async () => {
+    if (!filterLocation) return;
+  
+     // Get the start and end date of the selected week (Monday to Sunday)
+     const startOfWeek = new Date(currentDate);
+     startOfWeek.setDate(currentDate.getDate() - (currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1)); // Move to Monday
+   
+     const endOfWeek = new Date(startOfWeek);
+     endOfWeek.setDate(startOfWeek.getDate() + 6); // Move to Sunday
+  
+    // Convert to YYYY-MM-DD format
+    const startDate = startOfWeek.toISOString().split("T")[0];
+    const endDate = endOfWeek.toISOString().split("T")[0];
+  
+    const headers = {
+      "x-userid": "xxx",
+      "x-username": "xxx",
+      "x-source": "xxx",
+      "x-orgid": 2,
+      "x-lang": "en",
+      "Content-Type": "application/json"
+    };
+  
+    const params = new URLSearchParams();
+    if (filterObject) params.append("objectId", filterObject);
+    if (filterLocation) params.append("locationId", filterLocation);
+    params.append("startDate", startDate);
+    params.append("endDate", endDate);
+    params.append("day", '5');
+    params.append("page", "all");
+    console.log(`http://localhost:3001/api/v1/calendars?${params.toString()}`);
+  
+    const resp = await axios.get(`http://localhost:3001/api/v1/calendars?${params.toString()}`, {
+      headers
+    });
+  
+    let data = resp.data.data;
+    data = data.map((el: any, index: number) => ({
+      from: el.from_time.slice(0, 5), // Extract HH:mm
+      to: el.to_time.slice(0, 5),
+      no: index + 1,
+      calendar_id: el.id,
+      resource_type: el.schedule_category_id,
+      allocation_type: el.allocation_type,
+      location_id: el.location_id,
+      master_object_id: el.master_object_id,
+      appointment_no: index,
+    }));
+  
+    setAvailable(data);
+    getAppointments();
+  };
+
+  const getAppointments = async () => {
+    if (!filterLocation) return;
+  
+    // Get the start and end date of the selected week (Monday to Sunday)
+    const startOfWeek = new Date(currentDate);
+    startOfWeek.setDate(currentDate.getDate() - (currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1)); // Move to Monday
+  
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // Move to Sunday
+  
+    // Convert to ISO format (YYYY-MM-DD)
+    const startDate = startOfWeek.toISOString().split("T")[0];
+    const endDate = endOfWeek.toISOString().split("T")[0];
+  
+    const headers = {
+      "x-userid": "xxx",
+      "x-username": "xxx",
+      "x-source": "xxx",
+      "x-orgid": 2,
+      "x-lang": "en",
+      "Content-Type": "application/json"
+    };
+  
+    const params = new URLSearchParams();
+    if (filterObject) params.append("masterObjectId", filterObject);
+    if (filterLocation) params.append("locationId", filterLocation);
+    params.append("appointmentFromDate", startDate);
+    params.append("appointmentToDate", endDate);
+    params.append("page", "all");
+  
+    const resp = await axios.get(`http://localhost:3001/api/v1/appointments?${params.toString()}`, {
+      headers
+    });
+  
+    let data = resp.data.data;
+    data = data.map(({ appointmentFromTime, appointmentToTime, note }: any) => ({
+      from: appointmentFromTime.slice(0, 5),
+      to: appointmentToTime.slice(0, 5),
+      note
+    }));
+  
+    setBookedData(data);
+  };   
+
+  function handleAddEventWeek(fromTime: string, toTime: string, slot: any, booked: any) {
+    const [fromHours, fromMinutes] = fromTime.split(":").map(Number);
+    const [toHours, toMinutes] = toTime.split(":").map(Number);
+    const startDate = new Date(currentDate);
+    startDate.setHours(fromHours, fromMinutes);
+    const endDate = new Date(currentDate);
+    endDate.setHours(toHours, toMinutes);
+  
     showModal({
-      title: "Add Event",
-      body: <AddEventModal />,
+      title: CustomEventModal?.CustomAddEventModal?.title || "Add Appointment",
+      body: (
+        <AddEventModal
+          CustomAddEventModal={CustomEventModal?.CustomAddEventModal?.CustomForm}
+          fromTime={fromTime} 
+          toTime={toTime} 
+          slot={slot}
+          booked={booked}
+          startDate={startDate}
+          endDate={endDate}
+          refreshCalendar={getCalendars}
+        />
+      ),
       getter: async () => {
-        const startDate = event?.startDate || new Date();
-        const endDate = event?.endDate || new Date();
         return { startDate, endDate };
       },
     });
@@ -139,38 +221,6 @@ export default function WeeklyView({
     setCurrentDate(prevWeek);
   };
 
-  function handleAddEventWeek(dayIndex: number, detailedHour: string) {
-    if (!detailedHour) {
-      console.error("Detailed hour not provided.");
-      return;
-    }
-
-    const [hours, minutes] = detailedHour.split(":").map(Number);
-    const chosenDay = daysOfWeek[dayIndex % 7].getDate();
-
-    // Ensure day is valid
-    if (chosenDay < 1 || chosenDay > 31) {
-      console.error("Invalid day selected:", chosenDay);
-      return;
-    }
-
-    const date = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      chosenDay,
-      hours,
-      minutes
-    );
-
-    handleAddEvent({
-      startDate: date,
-      endDate: new Date(date.getTime() + 60 * 60 * 1000), // 1-hour duration
-      title: "",
-      id: "",
-      variant: "primary",
-    });
-  }
-
   return (
     <div className="flex flex-col gap-4">
       <motion.div
@@ -180,20 +230,6 @@ export default function WeeklyView({
         initial="hidden"
         animate="visible"
       >
-        {/* {chipData.map((chip) => (
-          <motion.div key={chip.id} variants={itemVariants}>
-            <Chip
-              color={chip.color}
-              className="min-w-full p-4 min-h-fit rounded-lg"
-              variant="flat"
-            >
-              <div className="title">
-                <span className="text-sm">{chip.title}</span>
-              </div>
-              <div className="description">{chip.description}</div>
-            </Chip>
-          </motion.div>
-        ))} */}
       </motion.div>
 
       <div className="flex ml-auto gap-3">
@@ -220,13 +256,10 @@ export default function WeeklyView({
           </Button>
         )}
       </div>
-      <div
-        key={currentDate.toDateString()}
-        className="grid use-automation-zoom-in grid-cols-8 gap-0"
-      >
+      <div key={currentDate.toDateString()} className="grid use-automation-zoom-in grid-cols-8 gap-0">
         <div className="sticky top-0 left-0 z-30 bg-default-100 rounded-tl-lg h-full border-0  flex items-center justify-center">
           <span className="text-lg font-semibold text-muted-foreground">
-            Week {getters.getWeekNumber(currentDate)}
+            Weekly
           </span>
         </div>
 
@@ -235,7 +268,7 @@ export default function WeeklyView({
             {daysOfWeek.map((day, idx) => (
               <div key={idx} className="relative flex flex-col">
                 <div className="sticky bg-default-100 top-0 z-20 flex-grow flex items-center justify-center">
-                  <div className="text-center p-4">
+                  <div className={clsx("text-lg font-semibold text-center p-4", new Date().toDateString() === day.toDateString() && "text-secondary-500")}>
                     <div className="text-lg font-semibold">
                       {getters.getDayName(day.getDay())}
                     </div>
@@ -263,11 +296,7 @@ export default function WeeklyView({
               className="absolute flex z-10 left-0 w-full h-[3px] bg-primary-300 dark:bg-primary/30 rounded-full pointer-events-none"
               style={{ top: `${timelinePosition}px` }}
             >
-              <Chip
-                color="success"
-                variant="flat"
-                className="absolute vertical-abs-center z-50 left-[-55px] text-xs uppercase"
-              >
+              <Chip color="success" variant="flat" className="absolute vertical-abs-center z-50 left-[-55px] text-xs uppercase">
                 {detailedHour}
               </Chip>
             </div>
@@ -293,60 +322,62 @@ export default function WeeklyView({
 
           <div className="col-span-7 bg-default-50 grid h-full grid-cols-7">
             {Array.from({ length: 7 }, (_, dayIndex) => {
-              const dayEvents = getters.getEventsForDay(
-                daysOfWeek[dayIndex % 7].getDate(),
-                currentDate
-              );
-
+              // const availableDummyData = [
+              //   { date: "2025-03-04", from: "09:00", to: "12:00" }, // March 4, 2025
+              //   { date: "2025-03-05", from: "14:00", to: "16:00" }, // March 5, 2025
+              //   { date: "2025-03-06", from: "10:00", to: "12:30" }, // March 6, 2025
+              // ];
+              
+              // const bookedDummyData = [
+              //   { date: "2025-03-04", from: "10:00", to: "11:00", note: "Doctor Slot" },
+              //   { date: "2025-03-05", from: "14:30", to: "15:30", note: "IPD Slot" },
+              //   { date: "2025-03-06", from: "09:00", to: "10:15", note: "Emergency Slot" },
+              // ];
               return (
-                <div
-                  key={`day-${dayIndex}`}
-                  className="col-span-1  border-default-200 z-20 relative transition duration-300 cursor-pointer border-r border-b text-center text-sm text-muted-foreground"
-                  onClick={() => {
-                    handleAddEventWeek(dayIndex, detailedHour as string);
-                  }}
-                >
-                  <AnimatePresence mode="wait">
-                    {dayEvents?.map((event, eventIndex) => {
-                      const { height, left, maxWidth, minWidth, top, zIndex } =
-                        handlers.handleEventStyling(event, dayEvents);
+                <div key={`day-${dayIndex}`} className="relative col-span-1 border-r border-b border-default-200">
+                  {Array.from({ length: 96 }, (_, slotIndex) => {
+                    const hour = Math.floor(slotIndex / 4);
+                    const minutes = (slotIndex % 4) * 15;
+                    let nextHour = hour;
+                    let nextMinutes = minutes + 15;
+                    if (nextMinutes === 60) {
+                      nextMinutes = 0;
+                      nextHour += 1;
+                    }
 
-                      return (
-                        <div
-                          key={`event-${event.id}-${eventIndex}`}
-                          style={{
-                            minHeight: height,
-                            height,
-                            top: top,
-                            left: left,
-                            maxWidth: maxWidth,
-                            minWidth: minWidth,
-                          }}
-                          className="flex transitio transition-all duration-1000 flex-grow flex-col z-50 absolute"
-                        >
-                          <EventStyled
-                            event={{
-                              ...event,
-                              CustomEventComponent,
-                              minmized: true,
-                            }}
-                            CustomEventModal={CustomEventModal}
-                          />
-                        </div>
-                      );
-                    })}
-                  </AnimatePresence>
-                  {/* Render hour slots */}
-                  {Array.from({ length: 24 }, (_, hourIndex) => (
-                    <div
-                      key={`day-${dayIndex}-hour-${hourIndex}`}
-                      className="col-span-1 border-default-200 h-16 z-20 relative transition duration-300 cursor-pointer border-r border-b text-center text-sm text-muted-foreground"
-                    >
-                      <div className="absolute bg-default-100 flex items-center justify-center text-xs opacity-0 transition duration-250 hover:opacity-100 w-full h-full">
-                        Add Event
+                    const startTime = `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+                    const endTime = `${nextHour.toString().padStart(2, "0")}:${nextMinutes.toString().padStart(2, "0")}`;
+                    const currentDateStr = daysOfWeek[dayIndex % 7].toISOString().split("T")[0];
+                    const booked = bookedData.find(({ date, from, to }) => date === currentDateStr && startTime >= from && startTime < to);
+                    const isBooked = !!booked;
+                    const availableSlot = availableData.find(({ date, from, to }) => date === currentDateStr && startTime >= from && startTime < to);
+                    const isAvailable = !!availableSlot;
+
+                    let slotClass = "hover:bg-default-100 text-xs text-muted-foreground";
+                    let slotContent = `${startTime} - ${endTime}`;
+                    let isClickable = false;
+
+                    if (isBooked) {
+                      slotClass = "bg-red-500 text-white text-xs font-bold rounded-md shadow-md";
+                      slotContent = `⛔ ${booked.note || "Booked"}`;
+                    } else if (isAvailable) {
+                      slotClass = "bg-green-200 text-black text-xs font-bold rounded-md shadow-md";
+                      slotContent = `✅ Available`;
+                      isClickable = true;
+                    }
+
+                    return (
+                      <div
+                        key={`day-${dayIndex}-slot-${slotIndex}`}
+                        className={`relative h-[16px] border-b border-default-200 flex items-center justify-center cursor-pointer transition duration-300 ${slotClass} ${isClickable ? "hover:bg-green-300" : "cursor-not-allowed"}`}
+                        onClick={() => {
+                          if (isClickable) handleAddEventWeek(startTime, endTime, availableSlot, booked);
+                        }}
+                      >
+                        {slotContent}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })}
