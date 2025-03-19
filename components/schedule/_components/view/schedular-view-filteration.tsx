@@ -37,8 +37,10 @@ export default function SchedulerViewFilteration({
   const [isMobile, setIsMobile] = useState(false);
   const [selectedObject, setSelectedObject] = useState<string>();
   const [selectedLocation, setSelectedLocation] = useState<string>();
+  const [selectedOrganization, setSelectedOrganization] = useState<string>();
   const [masterObject, setMasterObject] = useState<any[]>([]);
   const [masterLocation, setMasterLocation] = useState<any[]>([]);
+  const [masterOrganization, setMasterOrganization] = useState<any[]>([]);
 
   useEffect(() => {
     setClientSide(true);
@@ -46,11 +48,12 @@ export default function SchedulerViewFilteration({
 
 
   useEffect(function(){
-    getAllLocation();
+    // getAllLocation();
+    getAllOrganization();
 
   }, []);
 
-  const getAllLocation = async () => {
+  const getAllLocation = async (inputOrganization) => {
     try {
       const headers = {
         "x-userid": "xxx",
@@ -61,7 +64,8 @@ export default function SchedulerViewFilteration({
         "Content-Type": "application/json"
       };
       
-      const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/locations`, {
+      const query = `?organizationId=${inputOrganization}`;
+      const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/locations${query}`, {
         headers
       });
       let data = resp.data.data;
@@ -75,6 +79,38 @@ export default function SchedulerViewFilteration({
     }
   }
 
+  const getAllOrganization = async () => {
+    try {
+      const headers = {
+        "x-userid": "xxx",
+        "x-username": "xxx",
+        "x-source": "xxx",
+        "x-orgid": 2,
+        "x-lang": "en",
+        "Content-Type": "application/json"
+      };
+      
+      const resp = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/locations/organizations-list`, {
+        headers
+      });
+      let data = resp.data.data;
+
+      // use mock data for testing
+      // let data = locationData.data;
+  
+      setMasterOrganization(data);
+    } catch (err) {
+      console.log('~  err:', err)
+    }
+  }
+
+  const handleOganizationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedOrganization(event.target.value);
+    setSelectedLocation('');
+    setMasterLocation([]);
+    setSelectedObject('');
+  };
+
   const handleLocationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedLocation(event.target.value);
     setSelectedObject('');
@@ -86,10 +122,13 @@ export default function SchedulerViewFilteration({
   };
   
   useEffect(() => {
+    if (selectedOrganization) {
+      getAllLocation(selectedOrganization);
+    }
     if (selectedLocation) {
       fetchObjectsByLocation(selectedLocation);
     }
-  }, [selectedLocation]);
+  }, [selectedLocation, selectedOrganization]);
   
   const fetchObjectsByLocation = async (locationId: string) => {
     try {
@@ -140,14 +179,24 @@ export default function SchedulerViewFilteration({
     });
   }
 
+  const getDateRange = () => {
+    const today = new Date();
+    const selectedDate = today.getDate();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+    const selectedDay = today.getDay() + 1;
+
+    return { startDate, endDate, selectedDate, selectedDay };
+  }
+
   const handleManageSchedule = () => {
     if (!selectedLocation || !selectedObject) return;
   
-    console.log("Manage Schedule Clicked!", { selectedLocation, selectedObject });
-  
+    const selectedDate = getDateRange();
+    console.log("Manage Schedule Clicked! 222", { selectedLocation, selectedObject, selectedDate });
     showAddScheduleModal({
       title: "Manage Schedule",
-      body: <ManageScheduleModalContent selectedLocation={selectedLocation} selectedObject={selectedObject} />,
+      body: <ManageScheduleModalContent selectedLocation={selectedLocation} selectedObject={selectedObject} selectedDate={selectedDate} />,
       modalClassName: "max-w-5xl min-h-[600px]",
     });
   };
@@ -160,9 +209,26 @@ export default function SchedulerViewFilteration({
       <div className="flex justify-between items-center mb-4 px-3">
         <h2 className="text-lg font-semibold">Filter Events</h2>
         <div className="flex space-x-4">
+          {/* Organization */}
+          <select
+            onChange={handleOganizationChange}
+            value={selectedOrganization}
+            className="border p-2 rounded-md"
+          >
+            <option value="">
+              Select Organization
+            </option>
+            {masterOrganization?.map((item: any) => (
+              <option key={item.organization_id} value={item.organization_id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          {/* Location */}
           <select
             onChange={handleLocationChange}
             value={selectedLocation}
+            disabled={!selectedOrganization}
             className="border p-2 rounded-md"
           >
             <option value="">
@@ -174,6 +240,7 @@ export default function SchedulerViewFilteration({
               </option>
             ))}
           </select>
+          {/* Master Object */}
           <select
             onChange={handleObjectChange}
             value={selectedObject}
@@ -209,7 +276,10 @@ export default function SchedulerViewFilteration({
                 }
               >
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3, type: "spring", stiffness: 250 }}>
-                  <DailyView classNames={classNames?.buttons} filterLocation={selectedLocation} filterObject={selectedObject} />
+                  <DailyView classNames={classNames?.buttons}
+                    filterOrganization={selectedOrganization}
+                    filterLocation={selectedLocation}
+                    filterObject={selectedObject} />
                 </motion.div>
               </Tab>
             )}
