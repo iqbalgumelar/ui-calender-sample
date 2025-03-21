@@ -453,7 +453,7 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
               const availableSlot = availableData.find(({ from, to }: any) => slot >= from && slot < to);
               const booked = bookedData.find(({ from, to }: any) => slot >= from && slot < to);
               const isBooked = !!booked;
-              const isAvailable = !!availableSlot;
+              const isAvailable = availableSlot?.raw?.is_lock ? false : !!availableSlot;
 
               let slotClass = "bg-gray-800 text-gray-400"; // Default
               let statusText = "";
