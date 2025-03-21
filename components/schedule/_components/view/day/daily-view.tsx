@@ -153,7 +153,7 @@ export default function DailyView({
     const params = new URLSearchParams();
     if (filterObject) params.append("masterObjectId", filterObject);
     if (filterLocation) params.append("locationId", filterLocation);
-    if (filterOrganization) params.append("hospitalId", filterOrganization);
+    // if (filterOrganization) params.append("hospitalId", filterOrganization);
     params.append("appointmentFromDate", (new Date(currentDate)).toISOString())
     params.append("appointmentToDate", (new Date(currentDate)).toISOString())
     params.append("page", "all");
@@ -245,43 +245,51 @@ export default function DailyView({
   const [selectedPeriodDurationTime, setSelectedPeriodDurationTime] = useState<any>();
   const [timeSlots, setTimeSlots] = useState<any>(defaultTimeSlots);
   const [selectedCalendar, setSelectedCalendar] = useState<any>();
+  const [walkinSlots, setWalkinSlots] = useState<number[]>([]);
+  const [selectedCalendarDisplay, setSelectedCalendarDisplay] = useState<any>();
 
   useEffect(() => {
     if (!(selectedCalendar && availableData)) { return; }
+    // resetTimelineSetting();
     const selected = availableData.find((x: any) => x.calendar_id === selectedCalendar)
     setTimelineSetting({
       startTime: selected.from,
       endTime: selected.to,
     })
-    // console.log('CalendarSelected', selected)
+    setSelectedCalendarDisplay(selected)
     setSelectedTimeAppointmentInput(selected.raw.quota.total || 0)
     const t = generateTimeIntervals(selected.from, selected.to, Number(selected.raw.quota.total));
-    // console.log('CalendarSelectedOptions', t)
     setTimeInterval(t.timeIntervalMinutes)
     setTimeSlots(t.timeIntervals)
-    // setTimeInterval(t.timeIntervalMinutes)
-    // setTimeSlots(t.timeIntervalsFullDay)
+
+    // Walkin Setting
+    const walkinQuota = selected.raw.quota.walk_in;
+    const walkinQuotaSlotIndexList = [];
+    // Determine Next 1 Hour Index
+    const nextOneHourIndex: number = Number(findOneHourIndex(t.timeIntervals, t.timeIntervals[0]));
+    // Determine how many hour from start to end
+    const diffHourPeriod = getTimeDifference(selected.from, selected.to);
+    const diffHourPeriodNumber = Number(diffHourPeriod.split(':')[0]);
+    const manyHourFromPeriod = walkinQuota/diffHourPeriodNumber
+    for (let f = 1; f <= diffHourPeriodNumber; f++) {
+      let last = Math.floor((f * nextOneHourIndex) - manyHourFromPeriod);
+      let point = f * nextOneHourIndex;
+      for (let i = point; i > last; i--) {
+        const p = i - 1
+        walkinQuotaSlotIndexList.push(p)
+      }
+    }
+    setWalkinSlots(walkinQuotaSlotIndexList);
   }, [selectedCalendar])
 
-  const onClickChangeTimeSlot = () => {
-    if (!selectedTimeAppointmentInput || selectedTimeAppointmentInput < 1) { return; }
-    const t = generateTimeIntervals(selectedTimeStart, selectedTimeEnd, Number(selectedTimeAppointmentInput));
-    console.log('onClickChangeTimeSlot', t)
-    if (t) { setTimeSlots(t.timeIntervals) }
-  }
-  const onClickSaveTimeSlot = () => {
-    if (!selectedTimeAppointmentInput || selectedTimeAppointmentInput < 1) { return; }
-    console.log('onClickSaveTimeSlot', selectedTimeStart, selectedTimeEnd, Number(selectedTimeAppointmentInput))
-    const t = generateTimeIntervals(selectedTimeStart, selectedTimeEnd, Number(selectedTimeAppointmentInput));
-    console.log('onClickSaveTimeSlot', t)
-    if (t) { setTimeInterval(t.timeIntervalMinutes) }
-  }
-  const onClickResetTimeSlot = () => {
-    setSelectedTimeAppointmentInput('');
-    setTimeInterval(15)
-    console.log('reset: defaultTimeSlots', defaultTimeSlots)
-    console.log('reset: generateTimeSlotDefault', generateTimeSlotDefault())
-    setTimeSlots(generateTimeSlotDefault())
+  const findOneHourIndex = (timeArray: any[], givenTime: any) => {
+    const givenMinutes = givenTime.split(':').reduce((h: any, m: any) => +Number(h) * 60 + +Number(m));
+    const oneHourLater = Number(givenMinutes) + 60;
+
+    return timeArray.findIndex(time => {
+        const minutes = time.split(':').reduce((h: any, m: any) => +Number(h) * 60 + +Number(m));
+        return minutes >= oneHourLater;
+    });
   }
 
   const setTimelineSetting = (data: any) => {
@@ -289,6 +297,10 @@ export default function DailyView({
     setSelectedTimeEnd(data.endTime);
     setSelectedPeriodDurationTime(getTimeDifference(data.startTime, data.endTime))
     // console.log('setTimelineSetting', data)
+  }
+
+  const resetTimelineSetting = () => {
+    setTimelineSetting({startTime: null, endTime: null});
   }
 
   const getTimeDifference = (startTime: string, endTime: string) => {
@@ -474,7 +486,10 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
                   }}
                   className={`cursor-pointer px-6 py-3 h-[40px] flex items-center justify-between border-b border-default-200 w-full text-sm ${slotClass}`}
                 >
-                  <span>{timeSlots[index]} - {calculateEndTime(timeSlots[index], timeInterval)} {booked && booked.note ? ` | ${booked.note}` : '' }</span>
+                  <div className="flex flex-col" style={{position: 'relative'}}>
+                    <span>{timeSlots[index]} - {calculateEndTime(timeSlots[index], timeInterval)} {booked && booked.note ? ` | ${booked.note}` : '' }</span>
+                    {walkinSlots.includes(index) ? <span style={{fontSize: '10px', position: 'absolute', textAlign: 'right', left: 0, bottom: -12}}>Walk-in</span> : ''}
+                  </div>
                   {statusText && <span>{statusText}</span>}
                 </motion.div>
               );
@@ -482,6 +497,71 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
           )}
         </motion.div>
       </div>
+
+      {/* Time Slot Display: Waiting List */}
+      {selectedCalendarDisplay && selectedCalendarDisplay.raw.is_allow_waiting_list
+      ? <div className="my-3">
+        <h3 className="text-2xl font-semibold mb-0">Waiting List</h3>
+        <hr className="mb-3" />
+        
+        { !(selectedCalendarDisplay.raw.quota.waiting_list > 0) ?
+        <div className="p-4 text-center text-gray-500">
+          No available <b>Waiting List</b> time slots.
+        </div>
+        :
+        <div className="relative rounded-md bg-default-50 hover:bg-default-100 transition duration-400 w-full">
+        <motion.div className="relative rounded-xl flex flex-col w-full" ref={hoursColumnRef}>
+          {availableData.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">
+              No available time slots.
+            </div>
+          ) : (
+            Array(selectedCalendarDisplay.raw.quota.waiting_list || 0).fill(1).map((slot, index) => {
+              let slotClass = "bg-gray-800 text-gray-400"; // Default
+              let statusText = "";
+
+              // if (isBooked) {
+              //   slotClass = "bg-red-500 text-white font-bold rounded-md shadow-md";
+              //   statusText = "⛔ Booked";
+              // } else if (isAvailable) {
+                slotClass = "bg-green-200 text-black font-bold rounded-md shadow-md";
+                statusText = "✅ Available";
+              // }
+
+              return (
+                <motion.div
+                  key={`time-slot-${index}`}
+                  onClick={() => {
+                    // if (isAvailable && availableSlot) {
+                    //   // Calculate the "to" value by adding the selected timeInterval
+                    //   const [fromHours, fromMinutes] = timeSlots[index].split(":").map(Number);
+                    //   const toDate = new Date();
+                    //   toDate.setHours(fromHours);
+                    //   toDate.setMinutes(fromMinutes + timeInterval); // Add timeInterval minutes
+
+                    //   const toHours = String(toDate.getHours()).padStart(2, "0");
+                    //   const toMinutes = String(toDate.getMinutes()).padStart(2, "0");
+                    //   const toTime = `${toHours}:${toMinutes}`;
+
+                    //   handleAddEventDay(timeSlots[index], toTime, availableSlot, booked);
+                    // }
+                  }}
+                  className={`cursor-pointer px-6 py-3 h-[40px] flex items-center justify-between border-b border-default-200 w-full text-sm ${slotClass}`}
+                >
+                  <div className="flex flex-col" style={{position: 'relative'}}>
+                    <span>{true ? `${selectedTimeStart}-${selectedTimeEnd}` : '' }</span>
+                  </div>
+                  {statusText && <span>{statusText}</span>}
+                </motion.div>
+              );
+            })
+          )}
+        </motion.div>
+        </div>
+}
+
+      </div>
+      : ''}
     </div>
   );
 }
