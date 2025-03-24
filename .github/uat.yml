@@ -1,0 +1,86 @@
+name: Next Appointment UAT Deployment
+on:
+  push:
+    branches:
+      - uat
+  workflow_dispatch:
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+jobs:
+  build:
+    name: Build
+    if: contains( github.ref, 'uat')
+    runs-on: [Platform, Linux, arm64]
+    timeout-minutes: 30
+    env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.UAT_AWS_ACCESS_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.UAT_AWS_SECRET_ACCESS_KEY }}
+        ECR_REPOSITORY: ${{ secrets.UAT_ECR_REPOSITORY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@62f4f872db3836360b72999f4b87f1ff13310f3a
+      - name: Build
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+          | docker build \
+            --secret id=gt_gpr,src=/dev/stdin \
+            --platform linux/arm64 \
+            --build-arg NODE_VERSION=$NODE_VERSION \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            . -f Dockerfile
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
+      - name: extract image name
+        run: |-
+          echo "$image" > IMAGE_NAME
+      - name: upload image name artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IMAGE_NAME
+          path: IMAGE_NAME
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: [Platform, Linux, arm64]
+    timeout-minutes: 30
+    env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.UAT_AWS_ACCESS_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.UAT_AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+      - uses: actions/download-artifact@v4
+        with:
+          name: IMAGE_NAME
+      - name: extracting image name
+        run: |-
+          IMAGE_NAME=`cat IMAGE_NAME`
+          echo "image=$IMAGE_NAME" >> $GITHUB_ENV
+      - name: preparing environment variables
+        run: |-
+          chmod +x -R deployments/config/env-filter-uat.sh
+          deployments/config/env-filter-uat.sh
+      - name: tf init
+        run: |-
+          cd deployments/terraform/uat/
+          terraform init
+      - name: tf plan
+        run: |-
+          cd deployments/terraform/uat/
+          terraform plan -var-file="apps.tfvars"
+      - name: tf apply
+        run: |-
+          cd deployments/terraform/uat/
+          terraform apply -var-file="apps.tfvars" --auto-approve

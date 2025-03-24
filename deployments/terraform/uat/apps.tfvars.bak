@@ -1,0 +1,170 @@
+/*---------------------------------------------------------------------------------------
+© 2022 Amazon Web Services, Inc. or its affiliates. All Rights Reserved.
+ 
+This AWS Content is provided subject to the terms of the AWS Customer Agreement
+available at http://aws.amazon.com/agreement or other written agreement between
+Customer and either Amazon Web Services, Inc. or Amazon Web Services EMEA SARL or both.
+---------------------------------------------------------------------------------------*/
+
+#####################################################################################
+# Parameters for Host Account
+application_name = "<container_name>"
+short_name = "<short_name>"
+region = "ap-southeast-3"
+
+environment = "<environment>"
+# environment = "dev"
+
+subnet_ids = ["subnet-097393e07c11e7fe8", "subnet-0e29f3215ec338d42"]
+
+#####################################################################################
+# Parameters for ECS Cluster Information
+
+# ecs_cluster_name = "mysiloam-dev-cluster"
+ecs_cluster_name = "<ecs_cluster_name>"
+
+
+#####################################################################################
+# Parameters for Service Details
+
+service_name = "<container_name>"
+# service_name = "svc-container_name"
+
+requires_compatibilities = ["EC2"]
+# requires_compatibilities = ["EC2","FARGATE"]
+
+volume = {}
+
+#####################################################################################
+# Parameters for Container Details
+cpu                   = 256
+memory                = 512
+container_port        = <container_port>
+container_definitions = {
+  <container_name> = {
+    image   = "<image_uri>"
+    port_mappings = [
+      {
+        name          = "<container_name>"
+        containerPort = <container_port>
+        protocol      = "tcp"
+        appProtocol   = "http"
+      }
+    ]
+
+    # environment = [
+    #   {
+    #     name  = "key1"
+    #     value = "value1"
+    #   }
+    # ]
+
+    # secrets = [
+    #   {
+    #     name = "key2"
+    #     valueFrom = "ssmparam"
+    #   }
+    # ]
+
+    # mount_points = [
+    #   {
+    #     sourceVolume  = "my-vol",
+    #     containerPath = "/var/www/my-vol"
+    #   }
+    # ]
+
+    # entry_point = ["/src"]
+    # health_check = {
+    #     command = ["CMD-SHELL","curl -f http://localhost:5001/healthz || exit 1"]
+    #     interval = 30
+    #     timeout = 5
+    #     retries = 3
+    # }
+
+    # [DEFAULT] : DEFAULT Writing to CloudWatch is FALSE
+    enable_cloudwatch_logging = true
+
+    # Example image used requires access to write to root filesystem
+    readonly_root_filesystem = false
+  }
+}
+
+#####################################################################################
+# Parameters for Ingress 
+
+load_balancer = {
+  service = {
+    
+    target_group_arn = "<target_group_arn>"
+    container_name   = "<container_name>"
+    container_port   = <container_port>
+  }
+}
+
+
+# subnet_ids = [<CHANGE_MANUAL>]
+
+#####################################################################################
+# [DEFAULT] : IF capacity_provider_strategy = {}, THen task will be placed on Fargate
+capacity_provider_strategy = {
+
+    ## PS: Get information on Options of Capacity Provider from AWS Console
+    
+    mysiloam-ec2-ondemand-small = {
+      capacity_provider = "mysiloam-ec2-ondemand"
+      weight            = 1
+      base              = 1
+    }
+}
+
+###################################################
+# [DEFAULT] : ENSURE Task is spread to different AZ
+task_definition_placement_constraints = {
+  placement_constraint_1 = {
+    type       = "memberOf"
+    expression = "attribute:ecs.availability-zone in [ap-southeast-3a, ap-southeast-3b, ap-southeast-3c]"
+  }
+}
+
+
+############################################################################################
+# [DEFAULT] : IF Autoscaling = False, Then the "desired_count" need to be specified. Currently always specify desired_count = autoscaling_min
+enable_autoscaling        = true
+desired_count             = 1 # Default
+autoscaling_min_capacity  = 1
+autoscaling_max_capacity  = 1
+
+autoscaling_policies      = {
+    cpu = {
+      policy_type = "TargetTrackingScaling"
+
+      target_tracking_scaling_policy_configuration = {
+        predefined_metric_specification = {
+          predefined_metric_type = "ECSServiceAverageCPUUtilization"
+        }
+
+        target_value = 70
+      }
+    }
+    memory = {
+      policy_type = "TargetTrackingScaling"
+
+      target_tracking_scaling_policy_configuration = {
+        predefined_metric_specification = {
+          predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+        }
+
+        target_value = 70
+      }
+    }
+  }
+
+  tags = {
+    Name       = "Mysiloam-uat-ecs-iac"
+    Environment   = "uat"
+    OwnerTeam     = "mysiloam"
+    DepartmentID  = "mysiloam"
+    DataClassification  = "clinical"
+    ManagedVia    = "Terraform"
+    ProvisionedBy      = "Siloam-Team"
+  }
