@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM --platform=$BUILDPLATFORM node:22-buster AS builder
+FROM node:22-buster AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Production Image
-FROM --platform=$BUILDPLATFORM node:22-buster
+FROM node:22-buster
 
 WORKDIR /app
 
