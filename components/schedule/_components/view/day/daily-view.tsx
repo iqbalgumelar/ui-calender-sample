@@ -212,10 +212,12 @@ export default function DailyView({
         allocation_type: el.allocation_type,
         location_id: el.location_id,
         master_object_id: el.master_object_id,
+        calendar_title: el.calendar_title,
         appointment_no: index,
         raw: el,
       };
     });
+    
     setAvailable(data);
     if (data && data.length > 0) { setSelectedCalendar(data[0].calendar_id); }
     getAppointments();
@@ -246,9 +248,10 @@ export default function DailyView({
     });
     let data = resp.data.data;
 
-    data = data.map(({ appointmentFromTime, appointmentToTime, note }: any) => ({
+    data = data.map(({ appointmentFromTime, appointmentToTime, note, appointmentContent }: any) => ({
       from: appointmentFromTime.slice(0, 5),
       to: appointmentToTime.slice(0, 5),
+      appointmentContent,
       note
     }));
     setBookedData(data)
@@ -265,9 +268,16 @@ export default function DailyView({
   
     const endDate = new Date(currentDate);
     endDate.setHours(toHours, toMinutes);
-  
+    let title = 'Add All Day Appointment';
+    if (slot) {
+      if (booked) {
+        title = 'Detail Appointment'
+      } else {
+        title = 'Add Appointment'
+      }
+    }
     showModal({
-      title: CustomEventModal?.CustomAddEventModal?.title || (slot ? "Add Appointment" : "Add All Day Appointment"),
+      title,
       body: (
         <AddEventModal
           CustomAddEventModal={CustomEventModal?.CustomAddEventModal?.CustomForm}
