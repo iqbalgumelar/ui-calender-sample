@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Cookies from 'js-cookie';
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@nextui-org/button";
 
@@ -17,7 +18,7 @@ import axios from "axios";
 import { locationData, objectBylocationData } from "@/services/mocksFilter/masterMock";
 
 // Sample Master Object Data (Replace with API response)
-process.env.API_CALENDAR_URL='http://localhost:3000'
+process.env.API_CALENDAR_URL='https://uat-mysiloam-api-01.siloamhospitals.com/next-appointment'
 
 export default function SchedulerViewFilteration({
   views = {
@@ -381,9 +382,11 @@ export default function SchedulerViewFilteration({
 
   const handleOganizationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const organizationId = String(event.target.value).trim();
+    const hospitalId = masterOrganization?.find((item: any) => item.hospital_hope_id === Number(organizationId))?.hospital_id;
     setSelectedOrganization(organizationId);
     setMasterObject([]);
     setSelectedObject('');
+    Cookies.set('selectedHospital', hospitalId, { path: '/', expires: 1 }); // Expires in 1 day
   };
 
   const handleLocationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {

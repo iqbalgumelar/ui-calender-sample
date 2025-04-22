@@ -129,6 +129,7 @@ export default function DailyView({
       allocation_type: el.allocation_type,
       location_id: el.location_id,
       master_object_id: el.master_object_id,
+      calendar_title: el.calendar_title,
       appointment_no: index,
       raw: el,
     }));
@@ -162,9 +163,10 @@ export default function DailyView({
     });
     let data = resp.data.data;
 
-    data = data.map(({ appointmentFromTime, appointmentToTime, note }: any) => ({
+    data = data.map(({ appointmentFromTime, appointmentToTime, note, appointmentContent }: any) => ({
       from: appointmentFromTime.slice(0, 5),
       to: appointmentToTime.slice(0, 5),
+      appointmentContent,
       note
     }));
     setBookedData(data)
@@ -183,7 +185,7 @@ export default function DailyView({
     endDate.setHours(toHours, toMinutes);
   
     showModal({
-      title: CustomEventModal?.CustomAddEventModal?.title || "Add Appointment",
+      title: booked ? 'Detail Appointment' : 'Add Appointment',
       body: (
         <AddEventModal
           CustomAddEventModal={CustomEventModal?.CustomAddEventModal?.CustomForm}
