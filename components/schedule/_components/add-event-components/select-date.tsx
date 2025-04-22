@@ -73,11 +73,10 @@ export default function SelectDate({
         <DateRangePicker
           label="Stay duration"
           isRequired
-          value={{ start: dateState.startDate, end: dateState.endDate }}
           className="w-full"
           onChange={(value) => {
-            const start = value?.start;
-            const end = value?.end;
+            const start: any = value?.start;
+            const end: any = value?.end;
 
             const startDate = new Date(
               start?.year || 0,
@@ -103,23 +102,13 @@ export default function SelectDate({
           <TimeInput
             label="Start Time"
             defaultValue={dateState?.startTime}
-            onChange={(e: Time) => {
-              setDateState({
-                ...dateState,
-                startTime: e,
-              });
-            }}
+            
           />
 
           <TimeInput
             label="End Time"
             defaultValue={dateState?.endTime}
-            onChange={(e: Time) => {
-              setDateState({
-                ...dateState,
-                endTime: e,
-              });
-            }}
+            
             isInvalid={
               dateState?.startTime &&
               dateState?.endTime &&

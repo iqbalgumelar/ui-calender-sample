@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@nextui-org/button";
 import { Card } from "@nextui-org/card";
 import { Chip } from "@nextui-org/chip";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import clsx from "clsx";
+import axios from "axios";
+import { startOfMonth, endOfMonth } from "date-fns";
 
 import { useScheduler } from "@/providers/schedular-provider";
 import { useModalContext } from "@/providers/modal-provider";
@@ -14,6 +16,8 @@ import AddEventModal from "@/components/schedule/_modals/add-event-modal";
 import ShowMoreEventsModal from "@/components/schedule/_modals/show-more-events-modal";
 import EventStyled from "../event-component/event-styled";
 import { Event, CustomEventModal } from "@/types";
+
+let debounceReq: NodeJS.Timeout;
 
 export default function MonthView({
   prevButton,
@@ -32,10 +36,52 @@ export default function MonthView({
   filterLocation?: string;
   filterObject?: string;
 }) {
-  const { getters, weekStartsOn } = useScheduler();
+  const { getters, weekStartsOn, handlers } = useScheduler();
   const { showModal } = useModalContext();
 
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  useEffect(() => {
+    clearTimeout(debounceReq);
+    debounceReq = setTimeout(getAppointments, 800)
+  }, [currentDate, filterLocation, filterObject])
+
+  const getAppointments = async () => {
+    if (!filterLocation) return;
+  
+    const headers = {
+      "x-userid": "xxx",
+      "x-username": "xxx",
+      "x-source": "xxx",
+      "x-orgid": 2,
+      "x-lang": "en",
+      "Content-Type": "application/json"
+    };
+  
+    const params = new URLSearchParams();
+    if (filterObject) params.append("masterObjectId", filterObject);
+    if (filterLocation) params.append("locationId", filterLocation);
+    console.log('startOfDay(new Date(currentDate))', startOfMonth(new Date(currentDate)));
+    params.append("appointmentFromDate", startOfMonth(new Date(currentDate)).toISOString())
+    params.append("appointmentToDate", endOfMonth(new Date(currentDate)).toISOString())
+    params.append("page", "all");
+  
+    const resp = await axios.get(`http://localhost:3001/api/v1/appointments?${params.toString()}`, {
+      headers
+    });
+    let data = resp.data.data;
+
+    data = data.map(({ appointmentFromTime, appointmentToTime, note, ...rest }: any) => ({
+      id: rest.appointmentId,
+      title: note,
+      startDate: rest.appointmentDate,
+      endDate: rest.appointmentDate,
+      from: appointmentFromTime.slice(0, 5),
+      to: appointmentToTime.slice(0, 5),
+      note,
+    }));
+    handlers.handleInitialEvents(data);
+  }
 
   const daysInMonth = getters.getDaysInMonth(
     currentDate.getMonth(),

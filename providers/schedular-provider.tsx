@@ -250,6 +250,10 @@ export const SchedulerProvider = ({
     };
   }
 
+  function handleInitialEvents(events: Event[]) {
+    dispatch({ type: "SET_EVENTS", payload: events });
+  }
+
   function handleAddEvent(event: Event) {
     dispatch({ type: "ADD_EVENT", payload: event });
     if (onAddEvent) {
@@ -272,6 +276,7 @@ export const SchedulerProvider = ({
   }
 
   const handlers: Handlers = {
+    handleInitialEvents,
     handleEventStyling,
     handleAddEvent,
     handleUpdateEvent,

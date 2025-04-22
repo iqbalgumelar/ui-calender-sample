@@ -47,6 +47,7 @@ export interface Handlers {
     zIndex: number;
   };
   handleAddEvent: (event: Event) => void;
+  handleInitialEvents: (events: Event[]) => void;
   handleUpdateEvent: (event: Event, id: string) => void;
   handleDeleteEvent: (id: string) => void;
 }

@@ -20,9 +20,22 @@ import { useScheduler } from "@/providers/schedular-provider";
 import { v4 as uuidv4 } from "uuid";
 import { BsSkipStart } from "react-icons/bs";
 
+interface ISlotContent {
+  contact_name: string | null;
+  birth_date: string | null;
+  phone_number: string | null;
+  doctor_name: string | null;
+  payer_name?: string | null;
+  payer_number?: string | null;
+  email_address: string | null;
+  notes: string | null;
+  visit_number: string | null;
+  appointment_code: string | null;
+}
+
 export default function AddEventModal({
   CustomAddEventModal, fromTime, // Accept props
-  toTime, slot, booked, startDate, endDate, refreshCalendar
+  toTime, slot, booked, startDate, endDate, refreshCalendar, filterObject
 }: {
   CustomAddEventModal?: React.FC<{ register: any; errors: any }>;
   fromTime?: string;
@@ -32,6 +45,7 @@ export default function AddEventModal({
   startDate?: Date;
   endDate?: Date;
   refreshCalendar?: any;
+  filterObject?: string;
 }) {
   const { onClose, data } = useModalContext();
   const { handlers } = useScheduler();
@@ -42,8 +56,9 @@ export default function AddEventModal({
   const [masterObjects, setMasterObjects] = useState<{ key: string; name: string }[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<string>("");
   const [scheduleOptions, setScheduleOptions] = useState<
-    { key: string; name: string; startTime: string; endTime: string }[]
+  { key: string; name: string; startTime: string; endTime: string }[]
   >([]);
+  const [appointmentContent, setAppointmentContent] = useState<ISlotContent>();
 
   const typedData = data as Event;
 
@@ -129,6 +144,12 @@ export default function AddEventModal({
     }
   }, [startDate, booked, setValue]);
 
+  useEffect(() => {
+    if (!booked) { return; }
+    const slotContent = slot.appointmentContent;
+    setAppointmentContent(slotContent);
+  }, [slot]);
+
   const onSubmit: SubmitHandler<EventFormData> = async (formData) => {
     console.log("🚀 ~ formData:", formData);
     const selectedSlot = scheduleOptions.find(
@@ -137,20 +158,21 @@ export default function AddEventModal({
 
     const payload = {
       appointmentHopeId: uuidv4(),
-      appointmentNo: slot.appointment_no,
+      appointmentNo: slot ? slot.appointment_no : 0,
       appointmentDate: formData.startDate,
       appointmentStatusId: uuidv4(),
       channelId: "123e4567-e89b-12d3-a456-426614174000",
-      calendarId: slot.calendar_id,
+      calendarId: slot ? slot.calendar_id : '00000000-0000-0000-0000-000000000000',
       hospitalId: "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
       contactId: uuidv4(),
-      masterObjectId: slot.master_object_id,
+      masterObjectId: slot ? slot.master_object_id : filterObject,
       note: formData.description,
       isWaitingList: false,
       appointmentFromTime: fromTime,
       appointmentToTime: toTime,
       isWalkin: true,
       isLogged: false,
+      type: slot ? 's' : 'd',
       createByService: uuidv4(),
     };
 
@@ -192,9 +214,9 @@ export default function AddEventModal({
   };
 
   return (
+    <div>
     <form className="flex flex-col gap-3" onSubmit={handleSubmit(onSubmit)}>
       {/* <Input {...register("title")}  label="MR patient" placeholder="Enter mr patient" variant="bordered" isInvalid={!!errors.title} errorMessage={errors.title?.message} /> */}
-      <Textarea {...register("description")} value={description} onChange={(e) => setDecription(e.target.value)} label="Description" placeholder="Enter event description" variant="bordered" />
       <Input
         type="date"
         label="Select Date"
@@ -208,14 +230,139 @@ export default function AddEventModal({
       />
       {fromTime && toTime && (
         <p className="text-lg font-semibold text-blue-600">
-          📅 Selected Time: {fromTime} - {toTime}
+          {fromTime == '00:00' && toTime == '23:59' ? `Time : All Day` : `📅 Selected Time: ${fromTime} - ${toTime}` }
         </p>
       )}
+      <Textarea {...register("description")} value={description} onChange={(e) => setDecription(e.target.value)} label="Description" placeholder="Enter event description" variant="bordered" />
+      
 
       <ModalFooter>
         <Button color="danger" variant="light" onPress={onClose}>Cancel</Button>
-        <Button color="primary" type="submit">Save Event</Button>
+        <Button color="primary" type="submit">Add</Button>
       </ModalFooter>
     </form>
+
+    {booked ? (
+      <div>
+        <h1>Appointment Detail</h1>
+        <div className="flex flex-row gap-2 text-size">
+          {/* "contact_name": 'string',
+            "contact_birthdate": 'string',
+            "contact_local_mr": 'string',
+            "contact_phone": 'string',
+            "doctor_name": 'string | optional',
+            "payer_id": 'string | optional',
+            "payer_name": 'string | optional', 
+            "payer_number": 'string | optional',
+            "notes": 'string | optional',
+            "visit_number": 'string | optional',
+            "booking_code": 'string | optional' */}
+          {/* Patient */}
+          <div>
+          <Input
+            isReadOnly
+            className="max-w-xs"
+            defaultValue={appointmentContent?.contact_name || "-"}
+            label="Patient Name"
+            type="text"
+            variant="underlined"
+            size="sm"
+          />
+          <Input
+            isReadOnly
+            className="max-w-xs"
+            defaultValue={appointmentContent?.birth_date || "-"}
+            label="Patient Birtdate"
+            type="text"
+            variant="underlined"
+          />
+          {/* <Input
+            isReadOnly
+            className="max-w-xs"
+            defaultValue="101101"
+            label="Patient Local MR"
+            type="text"
+            variant="underlined"
+          /> */}
+          <Input
+            isReadOnly
+            className="max-w-xs"
+            defaultValue={appointmentContent?.phone_number || "-"}
+            label="Patient Phone"
+            type="text"
+            variant="underlined"
+          />
+          </div>
+
+          <div>
+          {/* Doctor */}
+          <Input
+            isReadOnly
+            className="max-w-xs"
+            defaultValue={appointmentContent?.doctor_name || "-"}
+            label="Doctor Name"
+            type="text"
+            variant="underlined"
+          />
+
+          {/* Payer */}
+          <Input
+            isReadOnly
+            className="max-w-xs"
+            defaultValue={appointmentContent?.payer_name || "-"}
+            label="Payer Name"
+            type="text"
+            variant="underlined"
+          />
+          <Input
+            isReadOnly
+            className="max-w-xs"
+            defaultValue={appointmentContent?.payer_number || "-"}
+            label="Payer Number"
+            type="text"
+            variant="underlined"
+          />
+          </div>
+
+          {/* Appointment */}
+          <div>
+          <Input
+            isReadOnly
+            className="max-w-xs"
+            defaultValue={appointmentContent?.email_address || "-"}
+            label="Email"
+            type="email"
+            variant="underlined"
+          />
+
+          <Input
+            isReadOnly
+            className="max-w-xs"
+            defaultValue={appointmentContent?.notes || "-"}
+            label="Notes"
+            type="text"
+            variant="underlined"
+          />
+          <Input
+            isReadOnly
+            className="max-w-xs"
+            defaultValue={appointmentContent?.visit_number || "-"}
+            label="Visit Number"
+            type="text"
+            variant="underlined"
+          />
+          <Input
+            isReadOnly
+            className="max-w-xs"
+            defaultValue={appointmentContent?.appointment_code || "-"}
+            label="Booking Code"
+            type="text"
+            variant="underlined"
+          />
+          </div>
+        </div>
+      </div>
+      ) : ''}
+    </div>
   );
 }
