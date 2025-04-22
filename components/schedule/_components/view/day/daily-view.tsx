@@ -191,7 +191,7 @@ export default function DailyView({
     if (slot) {
       if (booked) {
         title = 'Detail Appointment'
-      } else = {
+      } else {
         title = 'Add Appointment'
       }
     }

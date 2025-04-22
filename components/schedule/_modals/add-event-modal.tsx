@@ -202,7 +202,7 @@ export default function AddEventModal({
         contact_name: selectedPatient?.name,
         contact_birthdate: selectedPatient.birthDate,
         contact_phone: selectedPatient?.mobileNo1 || selectedPatient?.mobileNo2,
-        doctor_name: slot.calendar_title,
+        doctor_name: slot?.calendar_title,
       }
     };
 
