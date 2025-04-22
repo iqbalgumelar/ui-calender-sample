@@ -108,7 +108,7 @@ export default function AddScheduleForm({ selectedLocation, selectedObject, sele
           },
         });
       } else {
-        await axios.post("http://localhost:3001/api/v1/calendars", payload, {
+        await axios.post("https://uat-mysiloam-api-01.siloamhospitals.com/next-appointment/api/v1/calendars", payload, {
           headers: {
             "x-userid": "test1",
             "x-username": "test2",
