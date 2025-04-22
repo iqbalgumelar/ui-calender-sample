@@ -38,7 +38,7 @@ interface ISlotContent {
 
 export default function AddEventModal({
   CustomAddEventModal, fromTime, // Accept props
-  toTime, slot, booked, startDate, endDate, refreshCalendar
+  toTime, slot, booked, startDate, endDate, refreshCalendar, filterObject
 }: {
   CustomAddEventModal?: React.FC<{ register: any; errors: any }>;
   fromTime?: string;
@@ -48,6 +48,7 @@ export default function AddEventModal({
   startDate?: Date;
   endDate?: Date;
   refreshCalendar?: any;
+  filterObject?: string;
 }) {
   const { onClose, data } = useModalContext();
   const { handlers } = useScheduler();
@@ -181,20 +182,21 @@ export default function AddEventModal({
     console.log(selectedPatient)
     const payload = {
       appointmentHopeId: uuidv4(),
-      appointmentNo: slot.appointment_no,
+      appointmentNo: slot ? slot.appointment_no : 0,
       appointmentDate: formData.startDate,
       appointmentStatusId: uuidv4(),
       channelId: "123e4567-e89b-12d3-a456-426614174000",
-      calendarId: slot.calendar_id,
+      calendarId: slot ? slot.calendar_id : '00000000-0000-0000-0000-000000000000',
       hospitalId: selectedOrg,
       contactId: selectedPatient?.contactId,
-      masterObjectId: slot.master_object_id,
+      masterObjectId: slot ? slot.master_object_id : filterObject,
       note: formData.description,
       isWaitingList: false,
       appointmentFromTime: fromTime,
       appointmentToTime: toTime,
       isWalkin: true,
       isLogged: false,
+      type: slot ? 's' : 'd',
       createByService: uuidv4(),
       appointmentContent: {
         contact_name: selectedPatient?.name,
@@ -338,30 +340,23 @@ export default function AddEventModal({
             )}
           </form>
           <form className='flex flex-col gap-3' onSubmit={handleSubmit(onSubmit)}>
-            <Textarea
-              {...register("description")}
-              value={description}
-              onChange={(e) => setDecription(e.target.value)}
-              label='Description'
-              placeholder='Enter event description'
-              variant='bordered'
-            />
             <Input
-              type='date'
-              label='Select Date'
-              variant='bordered'
-              value={selectedDate ? selectedDate.toISOString().split("T")[0] : ""}
-              onChange={(e) => {
-                const date = new Date(e.target.value);
-                setSelectedDate(date);
-                setValue("startDate", date);
-              }}
-            />
-            {fromTime && toTime && (
-              <p className='text-lg font-semibold text-blue-600'>
-                📅 Selected Time: {fromTime} - {toTime}
-              </p>
-            )}
+        type="date"
+        label="Select Date"
+        variant="bordered"
+        value={selectedDate ? selectedDate.toISOString().split("T")[0] : ""}
+        onChange={(e) => {
+          const date = new Date(e.target.value);
+          setSelectedDate(date);
+          setValue("startDate", date);
+        }}
+      />
+      {fromTime && toTime && (
+        <p className="text-lg font-semibold text-blue-600">
+          {fromTime == '00:00' && toTime == '23:59' ? `Time : All Day` : `📅 Selected Time: ${fromTime} - ${toTime}` }
+        </p>
+      )}
+      <Textarea {...register("description")} value={description} onChange={(e) => setDecription(e.target.value)} label="Description" placeholder="Enter event description" variant="bordered" />
 
             <ModalFooter>
               <Button color='danger' variant='light' onPress={onClose}>
