@@ -92,7 +92,14 @@ export const eventSchema = z.object({
   color: z.string().nonempty("Color selection is required"),
 });
 
+export const eventSchemaPatient = z.object({
+  birthDate: z.date(),
+  patientName: z.string().nonempty("Patient Name is required"),
+});
+
 export type EventFormData = z.infer<typeof eventSchema>;
+
+export type EventFormDataPatient = z.infer<typeof eventSchemaPatient>;
 
 export type Views = {
   mobileViews?: string[];
