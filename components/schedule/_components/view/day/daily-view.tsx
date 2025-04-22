@@ -120,18 +120,21 @@ export default function DailyView({
     let data = resp.data.data;
 
      // Convert API time to comparable format (HH:mm)
-    data = data.map((el: any, index: number) => ({
-      from: el.from_time.slice(0, 5), // Extract HH:mm
-      to: el.to_time.slice(0, 5),
-      no: index + 1,
-      calendar_id: el.id,
-      resource_type: el.schedule_category_id,
-      allocation_type: el.allocation_type,
-      location_id: el.location_id,
-      master_object_id: el.master_object_id,
-      appointment_no: index,
-      raw: el,
-    }));
+    data = data.map((el: any, index: number) => {
+      const toTimeCast = el.to_time === '00:00:00' ? '24:00:00' : el.to_time;
+      return {
+        from: el.from_time.slice(0, 5), // Extract HH:mm
+        to: toTimeCast.slice(0, 5),
+        no: index + 1,
+        calendar_id: el.id,
+        resource_type: el.schedule_category_id,
+        allocation_type: el.allocation_type,
+        location_id: el.location_id,
+        master_object_id: el.master_object_id,
+        appointment_no: index,
+        raw: el,
+      };
+    });
     setAvailable(data);
     if (data && data.length > 0) { setSelectedCalendar(data[0].calendar_id); }
     getAppointments();
