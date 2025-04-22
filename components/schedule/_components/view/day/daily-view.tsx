@@ -5,7 +5,7 @@ import AddEventModal from "@/components/schedule/_modals/add-event-modal";
 import { CustomEventModal, Event } from "@/types";
 import { Button } from "@nextui-org/button";
 import { Chip } from "@nextui-org/chip";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, PlusIcon } from "lucide-react";
 import { time } from "console";
 import axios from "axios";
 import { Input } from "@heroui/input";
@@ -186,7 +186,7 @@ export default function DailyView({
     endDate.setHours(toHours, toMinutes);
   
     showModal({
-      title: CustomEventModal?.CustomAddEventModal?.title || "Add Appointment",
+      title: CustomEventModal?.CustomAddEventModal?.title || (slot ? "Add Appointment" : "Add All Day Appointment"),
       body: (
         <AddEventModal
           CustomAddEventModal={CustomEventModal?.CustomAddEventModal?.CustomForm}
@@ -197,6 +197,7 @@ export default function DailyView({
           startDate={startDate}
           endDate={endDate}
           refreshCalendar={getCalendars}
+          filterObject={filterObject}
         />
       ),
       getter: async () => {
@@ -437,6 +438,15 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
               Next
             </Button>
           )}
+          <Button
+              className={classNames?.prev}
+              startContent={<PlusIcon />}
+              style={{ marginLeft: 'auto' }}
+              disabled={!filterObject}
+              onClick={() => handleAddEventDay('00:00', '23:59', null, null)}
+            >
+              Add All Day
+            </Button>
         </div>
 
       {/* Time Slots Display */}
