@@ -504,30 +504,7 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
           ))}
         </select>
       </div> */}
-      <div className="my-5 gap-2">
-        <div className="mb-2">
-          <Select className="max-w-xs" label="Calendar View" placeholder="Select calendar view"
-            selectedKeys={[selectedCalendar]}
-            value={selectedCalendar}
-            onChange={(e) => setSelectedCalendar(e.target.value)}>
-            {availableData.map((item: any) => (
-              <SelectItem key={item.calendar_id} textValue={`Calendar ${item.from}-${item.to}`}>Calendar {item.from}-{item.to}</SelectItem>
-            ))}
-          </Select>
-        </div>
-        <div className="mb-2 flex items-center gap-2">
-          <Input type="time" label="Start Time" disabled={true} value={selectedTimeStart} onChange={(e) => setSelectedTimeStart(e.target.value)} />
-          <Input type="time" label="End Time" disabled={true} value={selectedTimeEnd} onChange={(e) => setSelectedTimeEnd(e.target.value)} />
-          <Input label="Total Quota on Period"
-            disabled={true}
-            value={`${selectedTimeAppointmentInput || '-'} Quota / ${timeInterval || '-'} minutes per slot`} />
-          {/* <ButtonGroup className="gap-2" isDisabled={!selectedCalendar}>
-          <Button onClick={onClickSaveTimeSlot}>Save</Button>
-          <Button onClick={onClickChangeTimeSlot}>Change</Button>
-          <Button onClick={onClickResetTimeSlot}>Reset</Button>
-          </ButtonGroup> */}
-        </div>
-      </div>
+      
       <div className="flex ml-auto  gap-3 mb-2">
           {prevButton ? (
             <div onClick={handlePrevDay}>{prevButton}</div>
@@ -606,7 +583,7 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
       const fromIndex = timeToSlotIndex(event.from);
       const toIndex = timeToSlotIndex(event.to);
       const top = fromIndex * 30;
-      const height = (toIndex - fromIndex) * 30;
+      const height = (toIndex - fromIndex) * 30 || 30;
 
       return (
         <div
@@ -626,8 +603,9 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
             boxShadow: "0px 2px 6px rgba(0, 0, 0, 0.2)",
           }}
         >
-          {event.note || "Booked"} - 
-          {event.from} - {event.to}
+          {event.appointmentContent?.contact_name || "Booked"} - 
+          {event.from} - {event.to} -
+          {event.note }
         </div>
       );
     });
