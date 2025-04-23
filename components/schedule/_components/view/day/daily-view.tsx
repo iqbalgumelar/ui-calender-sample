@@ -268,7 +268,7 @@ export default function DailyView({
   
     const endDate = new Date(currentDate);
     endDate.setHours(toHours, toMinutes);
-    let title = 'Add All Day Appointment';
+    let title = 'Add Appointment';
     if (slot) {
       if (booked) {
         title = 'Detail Appointment'
@@ -588,6 +588,33 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
       return (
         <div
           key={`group-${groupIndex}-event-${eventIndex}`}
+          onClick={() => {
+            console.log("tes")
+            // if (isAvailable && availableSlot) {
+            //   // Calculate the "to" value by adding the selected timeInterval
+            //   const [fromHours, fromMinutes] = timeSlots[index].split(":").map(Number);
+            //   const toDate = new Date();
+            //   toDate.setHours(fromHours);
+            //   toDate.setMinutes(fromMinutes + timeInterval); // Add timeInterval minutes
+
+            //   const toHours = String(toDate.getHours()).padStart(2, "0");
+            //   const toMinutes = String(toDate.getMinutes()).padStart(2, "0");
+            //   const toTime = `${toHours}:${toMinutes}`;
+
+            //   handleAddEventDay(timeSlots[index], toTime, availableSlot, booked);
+            // }
+            const [fromHours, fromMinutes] = event.from.split(":").map(Number);
+            const toDate = new Date();
+            toDate.setHours(fromHours);
+            toDate.setMinutes(fromMinutes + timeInterval); // ensure timeInterval is in scope
+
+            const toHours = String(toDate.getHours()).padStart(2, "0");
+            const toMinutes = String(toDate.getMinutes()).padStart(2, "0");
+            const toTime = `${toHours}:${toMinutes}`;
+            console.log("toTime", event)
+
+            handleAddEventDay(event.from, toTime, false, event);
+          }}
           style={{
             position: "absolute",
             top: `${top}px`,

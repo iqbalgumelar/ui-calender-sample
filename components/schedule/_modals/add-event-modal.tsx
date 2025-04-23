@@ -130,7 +130,7 @@ export default function AddEventModal({
     resolver: zodResolver(eventSchemaPatient),
     defaultValues: {
       patientName: "",
-      birthDate: new Date(),
+      birthDate: new Date() || "",
     },
   });
 
@@ -333,6 +333,7 @@ export default function AddEventModal({
 
   useEffect(() => {
     if (!booked) return;
+    console.log("booked", booked);
     setAppointmentContent(booked.appointmentContent);
   }, [slot]);
 
@@ -350,7 +351,7 @@ export default function AddEventModal({
       channelId: "123e4567-e89b-12d3-a456-426614174000",
       calendarId: slot ? slot.calendar_id : "00000000-0000-0000-0000-000000000000",
       hospitalId: selectedOrg,
-      contactId: selectedPatient?.contactId,
+      contactId: selectedPatient?.contactId || "00000000-0000-0000-0000-000000000000",
       masterObjectId: slot ? slot.master_object_id : filterObject,
       note: formData.description,
       isWaitingList: false,
@@ -361,10 +362,10 @@ export default function AddEventModal({
       type: slot ? "s" : "d",
       createByService: uuidv4(),
       appointmentContent: {
-        contact_name: selectedPatient?.name,
-        contact_birthdate: selectedPatient.birthDate,
-        contact_phone: selectedPatient?.mobileNo1 || selectedPatient?.mobileNo2,
-        doctor_name: slot?.calendar_title,
+        contact_name: selectedPatient?.name || "",
+        contact_birthdate: selectedPatient?.birthDate || "",
+        contact_phone: selectedPatient?.mobileNo1 || selectedPatient?.mobileNo2 || "",
+        doctor_name: slot?.calendar_title || "", 
       },
     };
 
@@ -434,6 +435,8 @@ export default function AddEventModal({
       {!booked && (
         <>
           <form className="flex flex-col gap-3 mb-3" onSubmit={handleSubmitPatient(onSubmitPatient)}>
+           
+          {!isAllDay && (
             <div className="flex flex-row items-end gap-3">
               <div className="flex-1">
                 <Input {...registerPatient("patientName")} label="Name" placeholder="Enter name" variant="bordered" isInvalid={!!errorsPatient.patientName} errorMessage={errorsPatient.patientName?.message} />
@@ -447,7 +450,8 @@ export default function AddEventModal({
               </div>
               <Button color="primary" type="submit" startContent={<SearchIcon />} />
             </div>
-            {isSearchPatient && (
+            )}
+            {isSearchPatient && !isAllDay && (
               <div className="mb-5">
                 <h5 className="text-lg font-semibold">Select a Patient</h5>
                 <div className="flex flex-col gap-2">
@@ -460,6 +464,7 @@ export default function AddEventModal({
                 </div>
               </div>
             )}
+            
           </form>
 
           <form className="flex flex-col gap-3" onSubmit={handleSubmit(onSubmit)}>
@@ -509,33 +514,45 @@ export default function AddEventModal({
 
             <ModalFooter>
               <Button color="danger" variant="light" onPress={onClose}>Cancel</Button>
-              <Button color="primary" type="submit" disabled={!selectedPatient}>Save Event</Button>
+              <Button color="primary" type="submit">Save Event</Button>
             </ModalFooter>
           </form>
         </>
       )}
 
-      {booked && (
+      {booked && booked.from != "00:00" && (
         <div>
           <h1>Appointment Detail</h1>
+          
+          
+          <div className="overflow-auto max-h-[400px] border rounded-lg p-4">
           <div className="flex flex-row gap-2 text-size">
             <div>
               <Input isReadOnly className="max-w-xs" value={appointmentContent?.contact_name || "-"} label="Patient Name" type="text" variant="underlined" size="sm" />
               <Input isReadOnly className="max-w-xs" value={appointmentContent?.contact_birthdate || "-"} label="Patient Birtdate" type="text" variant="underlined" />
               <Input isReadOnly className="max-w-xs" value={appointmentContent?.contact_phone || "-"} label="Patient Phone" type="text" variant="underlined" />
             </div>
+            
+            
             <div>
-              <Input isReadOnly className="max-w-xs" value={appointmentContent?.doctor_name || "-"} label="Doctor Name" type="text" variant="underlined" />
-              <Input isReadOnly className="max-w-xs" value={appointmentContent?.payer_name || "-"} label="Payer Name" type="text" variant="underlined" />
-              <Input isReadOnly className="max-w-xs" value={appointmentContent?.payer_number || "-"} label="Payer Number" type="text" variant="underlined" />
-            </div>
-            <div>
-              <Input isReadOnly className="max-w-xs" value={appointmentContent?.notes || "-"} label="Notes" type="text" variant="underlined" />
+              <Input isReadOnly className="max-w-xs" value={booked.notes || "-"} label="Notes" type="text" variant="underlined" />
               <Input isReadOnly className="max-w-xs" value={appointmentContent?.visit_number || "-"} label="Visit Number" type="text" variant="underlined" />
-              <Input isReadOnly className="max-w-xs" value={appointmentContent?.appointment_code || "-"} label="Booking Code" type="text" variant="underlined" />
+              <Input isReadOnly className="max-w-xs" value={booked.id || "-"} label="Booking Code" type="text" variant="underlined" />
             </div>
+
+            
+            
+          </div>
+          
           </div>
         </div>
+      )}
+
+      {booked && booked.note && (
+       
+          <div className="overflow-auto max-h-[400px] border rounded-lg p-4">
+          {booked.note} 
+          </div>
       )}
     </div>
   );
