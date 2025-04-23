@@ -92,6 +92,7 @@ export default function AddEventModal({
     calendarTitle: string;
     totalQuota: number;
   }[]>([]);;
+  const [note, setNote] = useState(booked.note || '');
 
   const pickedSlot = selectedQuotaSlotIndex !== null ? selectedScheduleData[selectedQuotaSlotIndex] : null;
 
@@ -430,6 +431,48 @@ export default function AddEventModal({
     }
   };
 
+  const onSubmitUpdate: SubmitHandler<EventFormData> = async (formData) => {
+    const payload = {
+      appointmentHopeId: booked.appointmentId,
+      appointmentNo: booked.appointmentNo,
+      appointmentDate: booked.appointmentDate,
+      appointmentStatusId: booked.appointmentStatusId,
+      channelId: booked.channelId,
+      calendarId: booked.calendarId,
+      hospitalId: booked.hospitalId,
+      contactId: booked.contactId,
+      masterObjectId: booked.masterObjectId,
+      note,
+      isWaitingList: booked.isWaitingList,
+      appointmentFromTime: booked.appointmentFromTime,
+      appointmentToTime: booked.appointmentToTime,
+      isWalkin: booked.isWalkin,
+      appointmentContent: booked.appointmentContent,
+      isLogged: false,
+      createByService: 'test update',
+    };
+
+    try {
+      const response = await fetch(`${process.env.API_CALENDAR_URL}/api/v1/appointments/${booked.appointmentId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-userid": "test",
+          "x-username": "test",
+          "x-source": "test",
+          "x-orgid": "2",
+        },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      refreshCalendar();
+    } catch (error) {
+      console.error(error);
+    }
+
+    onClose();
+  };
+
   return (
     <div>
       {!booked && (
@@ -549,10 +592,23 @@ export default function AddEventModal({
       )}
 
       {booked && booked.note && (
-       
-          <div className="overflow-auto max-h-[400px] border rounded-lg p-4">
-          {booked.note} 
-          </div>
+        <form className='flex flex-col gap-3' onSubmit={handleSubmit(onSubmitUpdate)}>
+            <div className="mb-3 max-h-[400px] border rounded-lg p-4">
+              <textarea 
+                className="form-control h-full w-full resize-none" 
+                name="note" 
+                id="note" 
+                rows="4"
+                placeholder="Tulis catatan di sini..."
+                value={note} // << controlled
+                onChange={(e) => setNote(e.target.value)} // << update value
+              />
+            </div>
+
+          <ModalFooter>
+            <Button color='primary' type='submit'>Update Event</Button>
+          </ModalFooter>
+      </form>
       )}
     </div>
   );
