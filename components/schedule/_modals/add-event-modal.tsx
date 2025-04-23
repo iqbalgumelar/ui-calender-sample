@@ -437,7 +437,7 @@ export default function AddEventModal({
         </>
       )}
 
-      {booked && booked.from != "00:00" && (
+      {booked && booked.type === "s" && (
         <div>
           <h1>Appointment Detail</h1>
           
@@ -465,7 +465,7 @@ export default function AddEventModal({
         </div>
       )}
 
-      {booked && booked.note && (
+      {booked && booked.note && booked.type === "d" && (
         <form className='flex flex-col gap-3' onSubmit={handleSubmit(onSubmitUpdate)}>
             <div className="mb-3 max-h-[400px] border rounded-lg p-4">
               <textarea 
