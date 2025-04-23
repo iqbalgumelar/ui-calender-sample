@@ -58,6 +58,7 @@ export default function DailyView({
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [availableData, setAvailable] = useState<any>([]);
   const [bookedData, setBookedData] = useState<any>([]);
+  const [availableTimeSlot, setAvailableTimeSlot] = useState<any>(null);
   const { showModal } = useModalContext();
 
   const handleNextDay = () => {
@@ -219,6 +220,10 @@ export default function DailyView({
     });
     
     setAvailable(data);
+    const timeSlotReq = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/calendars/${data[0].calendar_id}`, {
+      headers
+    });
+    setAvailableTimeSlot(timeSlotReq.data.data);
     if (data && data.length > 0) { setSelectedCalendar(data[0].calendar_id); }
     getAppointments();
   }
@@ -258,8 +263,9 @@ export default function DailyView({
   }
 
   function handleAddEventDay(fromTime: string, toTime: string, slot: any, booked: any) {
+    console.log('~  booked:', booked)
     console.log("Adding event:", fromTime, "to", toTime, 'slot', slot);
-  
+    
     const [fromHours, fromMinutes] = fromTime.split(":").map(Number);
     const [toHours, toMinutes] = toTime.split(":").map(Number);
   
@@ -285,6 +291,7 @@ export default function DailyView({
           toTime={toTime} 
           slot={slot}
           booked={booked}
+          timeSlot={availableTimeSlot}
           startDate={startDate}
           endDate={endDate}
           refreshCalendar={getCalendars}
