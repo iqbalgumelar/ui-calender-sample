@@ -227,7 +227,7 @@ export default function AddEventModal({
       isLogged: false,
       type: !isAllDay ? "s" : "d",
       createByService: uuidv4(),
-      appointmentContent: {
+      appointmentContent: isAllDay ? null : {
         contact_name: selectedPatient?.name || "",
         contact_birthdate: selectedPatient?.birthDate || "",
         contact_phone: selectedPatient?.mobileNo1 || selectedPatient?.mobileNo2 || "",
