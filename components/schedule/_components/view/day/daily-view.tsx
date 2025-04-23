@@ -277,11 +277,10 @@ export default function DailyView({
     });
     let data = resp.data.data;
 
-    data = data.map(({ appointmentFromTime, appointmentToTime, note, appointmentContent }: any) => ({
-      from: appointmentFromTime.slice(0, 5),
-      to: appointmentToTime.slice(0, 5),
-      appointmentContent,
-      note
+    data = data.map((el) => ({
+      from: el.appointmentFromTime.slice(0, 5),
+      to: el.appointmentToTime.slice(0, 5),
+      ...el,
     }));
     setBookedData(data)
   }
@@ -642,7 +641,7 @@ const generateTimeIntervals = (startTime: string, endTime: string, numberOfInter
             const toHours = String(toDate.getHours()).padStart(2, "0");
             const toMinutes = String(toDate.getMinutes()).padStart(2, "0");
             const toTime = `${toHours}:${toMinutes}`;
-            console.log("toTime", event)
+            console.log("toTime >>", event)
 
             handleAddEventDay(event.from, toTime, false, event);
           }}
