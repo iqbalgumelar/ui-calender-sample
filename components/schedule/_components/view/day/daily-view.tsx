@@ -220,11 +220,35 @@ export default function DailyView({
     });
     
     setAvailable(data);
-    const timeSlotReq = await axios.get(`${process.env.API_CALENDAR_URL}/api/v1/calendars/${data[0].calendar_id}`, {
-      headers
-    });
-    setAvailableTimeSlot(timeSlotReq.data.data);
-    if (data && data.length > 0) { setSelectedCalendar(data[0].calendar_id); }
+    const timeSlotRequests = data.map((item: any) =>
+      axios.get(
+        `${process.env.API_CALENDAR_URL}/api/v1/calendars/${item.calendar_id}`,
+        { headers }
+      )
+    );
+  
+    try {
+      const timeSlotResponses = await Promise.all(timeSlotRequests);
+      let mergedTimeSlots = timeSlotResponses.flatMap(
+        (response) => response.data.data
+      );
+    
+      // Sort by appointment_range_time in ascending order
+      mergedTimeSlots = mergedTimeSlots.sort((a: any, b: any) => {
+        const [startA] = a.appointment_range_time.split(" - ");
+        const [startB] = b.appointment_range_time.split(" - ");
+        return startA.localeCompare(startB);
+      });
+    
+      setAvailableTimeSlot(mergedTimeSlots);
+      console.log("~ Sorted and Merged Time Slots:", mergedTimeSlots);
+    } catch (error) {
+      console.error("Error fetching time slots:", error);
+    }
+  
+    if (data && data.length > 0) {
+      setSelectedCalendar(data[0].calendar_id);
+    }
     getAppointments();
   }
 
