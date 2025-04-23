@@ -49,6 +49,7 @@ export default function AddEventModal({
   slot,
   booked,
   startDate,
+  timeSlot,
   endDate,
   refreshCalendar,
   filterObject,
@@ -58,6 +59,7 @@ export default function AddEventModal({
   toTime?: string;
   slot?: any;
   booked?: any;
+  timeSlot?: any;
   startDate?: Date;
   endDate?: Date;
   refreshCalendar?: any;
@@ -95,6 +97,12 @@ export default function AddEventModal({
   const [note, setNote] = useState(booked.note || '');
 
   const pickedSlot = selectedQuotaSlotIndex !== null ? selectedScheduleData[selectedQuotaSlotIndex] : null;
+
+  useEffect(() => {
+    if (isAllDay) {
+      setSelectedQuotaSlotIndex(null);
+    }
+  }, [isAllDay]);
 
   if (pickedSlot) {
     console.log("Selected quota time range:", pickedSlot.startTime, pickedSlot.endTime);
@@ -165,162 +173,6 @@ export default function AddEventModal({
   }, [selectedDate]);
 
   useEffect(() => {
-    const fetchSchedules = async () => {
-      const response = {
-        data: [
-          {
-            id: "3e3ae00a-a09d-4470-8222-36674f89f4aa",
-            master_object_id: "00ede1b5-059c-4c25-94d7-df23b25038bb",
-            calendar_title: "drg. Jacinta Pipin Puntosari, SpKGA",
-            calendar_description: "OPD Doctor drg. Jacinta Pipin Puntosari, SpKGA",
-            start_date: "2025-04-15T02:32:22.647Z",
-            end_date: null,
-            from_time: "15:30:00",
-            to_time: "18:00:00",
-            day: 2,
-            location_id: "00000000-0000-0000-0000-000000000000",
-            allocation_type: "3",
-            quota: {
-              total: 19,
-              walk_in: 2,
-              waiting_list: 0,
-            },
-            is_allow_waiting_list: false,
-            is_allow_digital_channel: false,
-            is_all_day: false,
-            group_id: null,
-            reference_id: "ec747ec2-e5d0-408c-ac13-4664a5bc01f7",
-            status_id: "active",
-            series_id: null,
-            schedule_category_id: ["1"],
-            quota_options: {
-              bpjs: 0,
-              regular: 17,
-              walk_in: 2,
-              tele_consult: 0,
-              waiting_list: 0,
-            },
-            repetition_type: "2",
-            repetition_interval: 1,
-            repetition_dom: null,
-            repetition_week: null,
-            repetition_month: null,
-            booking_options: [],
-            is_lock: true,
-            created_by: "2293547c-a12e-41d9-bdac-a9dafae4b533",
-            created_name: "Vincent.coa",
-            created_from: "Trigger-DB",
-            created_date: "2025-04-14T02:32:32.814Z",
-            modified_by: "2293547c-a12e-41d9-bdac-a9dafae4b533",
-            modified_name: "Vincent.coa",
-            modified_from: "Trigger-DB",
-            modified_date: "2025-04-14T02:32:32.814Z",
-            deleted_date: null,
-          },
-          {
-            id: "bf43db52-15ef-45c4-80d3-8340b48cf714",
-            master_object_id: "00ede1b5-059c-4c25-94d7-df23b25038bb",
-            calendar_title: "drg. Jacinta Pipin Puntosari, SpKGA",
-            calendar_description: "OPD Doctor drg. Jacinta Pipin Puntosari, SpKGA",
-            start_date: "2025-04-15T02:32:22.648Z",
-            end_date: null,
-            from_time: "07:00:00",
-            to_time: "10:00:00",
-            day: 2,
-            location_id: "00000000-0000-0000-0000-000000000000",
-            allocation_type: "3",
-            quota: {
-              total: 6,
-              walk_in: 0,
-              waiting_list: 0,
-            },
-            is_allow_waiting_list: false,
-            is_allow_digital_channel: false,
-            is_all_day: false,
-            group_id: null,
-            reference_id: "6418fe44-18e9-4cde-9764-393cb912fe90",
-            status_id: "active",
-            series_id: null,
-            schedule_category_id: ["1", "4"],
-            quota_options: {
-              bpjs: 0,
-              regular: 0,
-              walk_in: 0,
-              tele_consult: 6,
-              waiting_list: 0,
-            },
-            repetition_type: "2",
-            repetition_interval: 1,
-            repetition_dom: null,
-            repetition_week: null,
-            repetition_month: null,
-            booking_options: [],
-            is_lock: true,
-            created_by: "2293547c-a12e-41d9-bdac-a9dafae4b533",
-            created_name: "Vincent.coa",
-            created_from: "Trigger-DB",
-            created_date: "2025-04-14T02:32:32.814Z",
-            modified_by: "2293547c-a12e-41d9-bdac-a9dafae4b533",
-            modified_name: "Vincent.coa",
-            modified_from: "Trigger-DB",
-            modified_date: "2025-04-14T02:32:32.814Z",
-            deleted_date: null,
-          },
-        ],
-        code: "OK",
-        message: "Get Calendar successfully",
-        meta: {
-          total_page: 1,
-          current_page: 1,
-          page_size: 10,
-          total_records: 2,
-        },
-      };
-      const availableSchedules = response.data
-      .filter((slot) => slot.quota?.total > 0) // Filter if slot has quota
-      .map((slot, index) => ({
-        key: slot.id,
-        name: `${slot.from_time} - ${slot.to_time}`,
-        startTime: slot.from_time,
-        endTime: slot.to_time,
-        calendarTitle: slot.calendar_title,
-        totalQuota: slot.quota.total,
-      }));
-
-      const availableSchedules2 = response.data
-        .filter((slot) => slot.quota?.total > 0)
-        .flatMap((slot) => {
-          const start = moment(slot.from_time, "HH:mm:ss");
-          const end = moment(slot.to_time, "HH:mm:ss");
-          const totalMinutes = end.diff(start, "minutes");
-          const chunkMinutes = totalMinutes / slot.quota.total;
-
-          const slotChunks = Array.from({ length: slot.quota.total }, (_, i) => {
-            const chunkStart = moment(start).add(i * chunkMinutes, "minutes");
-            const chunkEnd = moment(start).add((i + 1) * chunkMinutes, "minutes");
-
-            return {
-              key: `${slot.id}-${i}`,
-              originalId: slot.id,
-              calendarTitle: slot.calendar_title,
-              startTime: chunkStart.format("HH:mm"),
-              endTime: chunkEnd.format("HH:mm"),
-              quotaIndex: i + 1,
-            };
-          });
-
-          return slotChunks;
-        });
-
-      setScheduleOptions(availableSchedules);
-      setSelectedScheduleData(availableSchedules2);
-      
-      console.log("why",availableSchedules2);
-    };
-    fetchSchedules();
-  }, [selectedDate, selectedMasterObject]);
-
-  useEffect(() => {
     if (booked) {
       setDecription(booked.note);
     }
@@ -339,28 +191,42 @@ export default function AddEventModal({
   }, [slot]);
 
   const onSubmit: SubmitHandler<EventFormData> = async (formData) => {
-    
+    console.log('selectedQuotaSlotIndex', selectedQuotaSlotIndex)
     console.log("pickedSlot", pickedSlot);
+    let selectedTimeSlot;
+    let selectedFromTime = "00:00";
+    let selectedToTime = "23:59";
+    
+    if (!isAllDay) {
+      selectedTimeSlot =
+        selectedQuotaSlotIndex !== null
+          ? timeSlot[selectedQuotaSlotIndex]
+          : undefined;
+      selectedFromTime = selectedTimeSlot.appointment_range_time.split(" - ")[0];
+      console.log('~  selectedFromTime:', selectedFromTime)
+      selectedToTime = selectedTimeSlot.appointment_range_time.split(" - ")[1];
+      console.log('~  selectedToTime:', selectedToTime)
+    }
     const selectedOrg = Cookies.get("selectedHospital");
     const selectedSlot = scheduleOptions.find((s) => s.key === selectedSchedule);
 
     const payload = {
       appointmentHopeId: uuidv4(),
-      appointmentNo: slot ? slot.appointment_no : 0,
+      appointmentNo: slot ? slot[0].appointment_no : 0,
       appointmentDate: formData.startDate,
       appointmentStatusId: uuidv4(),
       channelId: "123e4567-e89b-12d3-a456-426614174000",
-      calendarId: slot ? slot.calendar_id : "00000000-0000-0000-0000-000000000000",
+      calendarId: slot ? slot[0].calendar_id : "00000000-0000-0000-0000-000000000000",
       hospitalId: selectedOrg,
       contactId: selectedPatient?.contactId || "00000000-0000-0000-0000-000000000000",
-      masterObjectId: slot ? slot.master_object_id : filterObject,
+      masterObjectId: slot ? slot[0].master_object_id : filterObject,
       note: formData.description,
       isWaitingList: false,
-      appointmentFromTime: pickedSlot ? pickedSlot.startTime : "00:00",
-      appointmentToTime: pickedSlot ? pickedSlot.endTime : "23:59",
+      appointmentFromTime: selectedFromTime,
+      appointmentToTime: selectedToTime,
       isWalkin: true,
       isLogged: false,
-      type: slot ? "s" : "d",
+      type: !isAllDay ? "s" : "d",
       createByService: uuidv4(),
       appointmentContent: {
         contact_name: selectedPatient?.name || "",
@@ -534,24 +400,32 @@ export default function AddEventModal({
                 All Day
               </label>
             </div>
-            {!isAllDay && selectedScheduleData && (
-            <div className="mt-4">
-              <h5 className="font-semibold mb-2">Select Quota Slot</h5>
-              <div className="flex flex-wrap gap-2">
-                {Array.from({ length: selectedScheduleData.length }, (_, i) => (
-                  <Button
-                    key={i}
-                    size="sm"
-                    variant={selectedQuotaSlotIndex === i ? "solid" : "flat"}
-                    color={selectedQuotaSlotIndex === i ? "primary" : "secondary"}
-                    onClick={() => setSelectedQuotaSlotIndex(i)}
-                  >
-                    {selectedScheduleData[i].startTime} - {selectedScheduleData[i].endTime}
-                  </Button>
-                ))}
+            {!isAllDay && timeSlot && (
+              <div className="mt-4">
+                <h5 className="font-semibold mb-2">Select Quota Slot</h5>
+                <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-[150px]">
+                  {Array.from({ length: timeSlot.length }, (_, i) => (
+                    <label
+                      key={i}
+                      className={`px-2 py-2 rounded-lg cursor-pointer ${selectedQuotaSlotIndex === i
+                          ? "bg-primary text-white"
+                          : "bg-secondary text-black"
+                        }`}
+                    >
+                      <input
+                        type="radio"
+                        name="quotaSlot"
+                        value={i}
+                        className="hidden"
+                        checked={selectedQuotaSlotIndex === i}
+                        onChange={() => setSelectedQuotaSlotIndex(i)}
+                      />
+                      {timeSlot[i].appointment_range_time}
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
             <Textarea {...register("description")} value={description} onChange={(e) => setDecription(e.target.value)} label="Description" placeholder="Enter event description" variant="bordered" />
 
